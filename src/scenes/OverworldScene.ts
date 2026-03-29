@@ -1298,7 +1298,6 @@ export class OverworldScene extends Phaser.Scene {
   }
 
   private handleBattleComplete(result: BattleResult): void {
-    this.scene.resume();
     this.transitionLocked = false;
     this.cameras.main.fadeIn(220, 8, 19, 31);
 

@@ -9,6 +9,7 @@ import {
   getQuizWarningTimeMs,
 } from "../game/quizBattle";
 import { getStoryVisualTheme, toHexColor, type StoryVisualTheme } from "../game/storyVisuals";
+import { finalizeBattleTransition } from "../game/battleTransition";
 import { createUiPanel } from "../game/uiSkin";
 import { DIFFICULTY_RULES, GAME_FONT, THEME } from "../game/theme";
 import { worldState } from "../game/worldState";
@@ -1142,21 +1143,30 @@ export class BattleScene extends Phaser.Scene {
     this.time.delayedCall(820, () => {
       this.cameras.main.fadeOut(160, 7, 19, 31);
       this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
-        if (outcome === "lose") {
-          this.scene.start("GameOverScene", {
-            message: t("gameover.defeat_message"),
-          });
-          return;
-        }
-
-        this.game.events.emit("battle-complete", {
-          battleId: this.battleId,
-          outcome,
-          source: this.battleSource,
-          encounteredCreatureId: this.encounteredCreatureId,
-        } satisfies BattleResult);
-        this.scene.resume("OverworldScene");
-        this.scene.stop();
+        finalizeBattleTransition(
+          {
+            battleId: this.battleId,
+            outcome,
+            source: this.battleSource,
+            encounteredCreatureId: this.encounteredCreatureId,
+          } satisfies BattleResult,
+          {
+            startGameOver: () => {
+              this.scene.start("GameOverScene", {
+                message: t("gameover.defeat_message"),
+              });
+            },
+            resumeOverworld: () => {
+              this.scene.resume("OverworldScene");
+            },
+            emitBattleComplete: (result) => {
+              this.game.events.emit("battle-complete", result);
+            },
+            stopBattle: () => {
+              this.scene.stop();
+            },
+          },
+        );
       });
     });
   }
