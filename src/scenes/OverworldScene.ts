@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { registry } from "../data/registry";
+import { getStoryProfile } from "../data/stories";
 import { resetWorldState, saveWorldState, worldState } from "../game/worldState";
 import { DIFFICULTY_RULES, GAME_FONT, PLAYER_AVATARS, THEME } from "../game/theme";
 import type {
@@ -92,6 +93,10 @@ export class OverworldScene extends Phaser.Scene {
     return this.transitionLocked || this.time.now < this.interactionLockedUntil;
   }
 
+  private get activeStory() {
+    return getStoryProfile(worldState.selectedAvatar);
+  }
+
   private bindInput(): void {
     this.cursors = this.input.keyboard!.createCursorKeys();
     this.keys = this.input.keyboard!.addKeys({
@@ -121,7 +126,7 @@ export class OverworldScene extends Phaser.Scene {
     this.lastPlayerPosition.set(spawn.x, spawn.y);
     this.encounterTravel = 0;
     this.areaText.setText(this.map.title);
-    this.setMessage(`You arrived in ${this.map.title}.`);
+    this.setMessage(initial ? this.activeStory.openingMessage : `You arrived in ${this.map.title}.`);
     this.refreshStatus();
     saveWorldState();
 
@@ -412,13 +417,12 @@ export class OverworldScene extends Phaser.Scene {
     }
 
     if (this.encounterZone) {
-      const difficulty = DIFFICULTY_RULES[worldState.selectedDifficulty];
       this.hudText.setText(
-        `Exploring ${this.map.title}. ${this.encounterZone.label}. ${difficulty.label} mode is active.`,
+        `Exploring ${this.map.title}. ${this.encounterZone.label}. Goal: ${this.activeStory.objectiveShort}`,
       );
     } else {
       this.hudText.setText(
-        `Arrow keys/WASD move. E interacts. ${DIFFICULTY_RULES[worldState.selectedDifficulty].label} mode.`,
+        `Arrow keys/WASD move. E interacts. Goal: ${this.activeStory.objectiveShort}`,
       );
     }
   }
@@ -484,8 +488,12 @@ export class OverworldScene extends Phaser.Scene {
     if (interactable.kind === "world") {
       const worldItem = interactable.data;
       const collected = Boolean(worldState.collectedInteractives[worldItem.id]);
-      const lines =
-        collected && worldItem.collectedLines ? worldItem.collectedLines : worldItem.lines;
+      const override = worldItem.storyKey
+        ? this.activeStory.dialogueByKey[worldItem.storyKey]
+        : undefined;
+      const lines = collected
+        ? override?.collectedLines ?? worldItem.collectedLines ?? worldItem.lines
+        : override?.lines ?? worldItem.lines;
       this.setMessage(lines.join(" "));
 
       if (worldItem.once && !collected) {
@@ -499,7 +507,10 @@ export class OverworldScene extends Phaser.Scene {
     if (interactable.kind === "npc") {
       const npc = interactable.data;
       const defeated = npc.battleId ? Boolean(worldState.defeatedBattles[npc.battleId]) : false;
-      const lines = defeated && npc.defeatedLines ? npc.defeatedLines : npc.lines;
+      const override = npc.storyKey ? this.activeStory.dialogueByKey[npc.storyKey] : undefined;
+      const lines = defeated
+        ? override?.defeatedLines ?? npc.defeatedLines ?? npc.lines
+        : override?.lines ?? npc.lines;
       this.setMessage(lines.join(" "));
 
       if (npc.battleId && !defeated) {
@@ -589,13 +600,13 @@ export class OverworldScene extends Phaser.Scene {
     const defeatedCount = Object.keys(worldState.defeatedBattles).length;
     const collectedCount = Object.keys(worldState.collectedInteractives).length;
     this.statusText.setText(
-      `Hero: ${PLAYER_AVATARS[worldState.selectedAvatar].label}\nMode: ${DIFFICULTY_RULES[worldState.selectedDifficulty].label}\nVictories: ${defeatedCount}\nDiscoveries: ${collectedCount}`,
+      `Hero: ${PLAYER_AVATARS[worldState.selectedAvatar].label}\nStory: ${this.activeStory.storyTitle}\nVictories: ${defeatedCount}\nDiscoveries: ${collectedCount}`,
     );
   }
 
   private createHelpPanel(width: number, height: number): Phaser.GameObjects.Container {
     const panelWidth = 520;
-    const panelHeight = 260;
+    const panelHeight = 320;
     const panel = this.add.container(width / 2, height / 2).setScrollFactor(0).setDepth(40);
 
     const backdrop = this.add
@@ -617,9 +628,14 @@ export class OverworldScene extends Phaser.Scene {
         "Reset progress: R",
         "",
         `Hero: ${PLAYER_AVATARS[worldState.selectedAvatar].label}`,
+        `Story: ${this.activeStory.storyTitle}`,
         `Difficulty: ${DIFFICULTY_RULES[worldState.selectedDifficulty].label}`,
         "",
-        "Goal: clear trainer battles, find route clues, and explore the hidden grove, lake edge, town house, and forest path.",
+        `Goal: ${this.activeStory.startingObjective}`,
+        "",
+        `Mystery: ${this.activeStory.regionalMystery}`,
+        "",
+        `Liora's read: ${this.activeStory.mentorHook}`,
         "",
         `Asset direction: ${Object.values({ ...registry.maps }).length} maps are ready for a CC0-first art swap.`,
       ].join("\n"),

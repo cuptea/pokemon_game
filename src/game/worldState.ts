@@ -1,6 +1,8 @@
 import type { GameDifficulty, PlayerAvatar, WorldState } from "../types/world";
 
 const STORAGE_KEY = "pokemon_game_world_state_v1";
+const VALID_AVATARS: PlayerAvatar[] = ["blaze", "mist", "grove"];
+const VALID_DIFFICULTIES: GameDifficulty[] = ["casual", "adventure", "heroic"];
 
 const initialState = (): WorldState => ({
   currentMapId: "mossgrove_town",
@@ -31,9 +33,14 @@ export function loadWorldState(): WorldState {
       currentSpawnId: parsed.currentSpawnId ?? "town_square",
       defeatedBattles: parsed.defeatedBattles ?? {},
       collectedInteractives: parsed.collectedInteractives ?? {},
-      selectedAvatar: (parsed.selectedAvatar as PlayerAvatar | undefined) ?? "blaze",
-      selectedDifficulty:
-        (parsed.selectedDifficulty as GameDifficulty | undefined) ?? "adventure",
+      selectedAvatar: VALID_AVATARS.includes(parsed.selectedAvatar as PlayerAvatar)
+        ? (parsed.selectedAvatar as PlayerAvatar)
+        : "blaze",
+      selectedDifficulty: VALID_DIFFICULTIES.includes(
+        parsed.selectedDifficulty as GameDifficulty,
+      )
+        ? (parsed.selectedDifficulty as GameDifficulty)
+        : "adventure",
       introCompleted: parsed.introCompleted ?? false,
     };
   } catch {

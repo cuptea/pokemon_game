@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { getStoryProfile } from "../data/stories";
 import { saveWorldState, worldState } from "../game/worldState";
 import { DIFFICULTY_RULES, GAME_FONT, PLAYER_AVATARS } from "../game/theme";
 import type { GameDifficulty, PlayerAvatar } from "../types/world";
@@ -87,6 +88,7 @@ export class StartScene extends Phaser.Scene {
 
     AVATAR_ORDER.forEach((avatar, index) => {
       const info = PLAYER_AVATARS[avatar];
+      const story = getStoryProfile(avatar);
       const panel = this.add.container(200 + index * 220, 330);
       const card = this.add.rectangle(0, 0, 180, 180, 0x1c2541, 0.96).setStrokeStyle(4, 0x5bc0be);
       const portrait = this.add.image(0, -6, info.textureKey).setScale(2.8);
@@ -96,7 +98,13 @@ export class StartScene extends Phaser.Scene {
         color: "#f8f9fa",
         fontStyle: "bold",
       }).setOrigin(0.5);
-      panel.add([card, portrait, label]);
+      const subtitle = this.add.text(0, 92, story.cardSubtitle, {
+        fontFamily: GAME_FONT,
+        fontSize: "13px",
+        color: "#d9f0ff",
+        align: "center",
+      }).setOrigin(0.5);
+      panel.add([card, portrait, label, subtitle]);
       this.avatarCards.push(panel);
     });
   }
@@ -135,12 +143,15 @@ export class StartScene extends Phaser.Scene {
 
     this.hintText = this.add.text(
       480,
-      620,
-      "LEFT/RIGHT changes hero. UP/DOWN changes difficulty.",
+      616,
+      "",
       {
         fontFamily: GAME_FONT,
-        fontSize: "18px",
+        fontSize: "15px",
         color: "#d9f0ff",
+        align: "center",
+        wordWrap: { width: 800 },
+        lineSpacing: 6,
       },
     ).setOrigin(0.5);
 
@@ -236,9 +247,9 @@ export class StartScene extends Phaser.Scene {
     });
 
     const avatar = PLAYER_AVATARS[AVATAR_ORDER[this.avatarIndex]];
-    const difficulty = DIFFICULTY_RULES[DIFFICULTY_ORDER[this.difficultyIndex]];
+    const story = getStoryProfile(AVATAR_ORDER[this.avatarIndex]);
     this.hintText.setText(
-      `${avatar.label} selected. ${difficulty.label} sets enemy pressure and encounter pace.`,
+      `${avatar.label} selected. ${story.storyTitle}.\nGoal: ${story.objectiveShort}`,
     );
   }
 

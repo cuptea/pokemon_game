@@ -65,6 +65,7 @@ export type NpcPlacement = {
   x: number;
   y: number;
   color: number;
+  storyKey?: string;
   lines: string[];
   defeatedLines?: string[];
   battleId?: string;
@@ -91,6 +92,7 @@ export type InteractablePlacement = {
   textureKey: string;
   tint?: number;
   prompt: string;
+  storyKey?: string;
   lines: string[];
   collectedLines?: string[];
   once?: boolean;

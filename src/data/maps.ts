@@ -40,9 +40,12 @@ export const maps: Record<string, MapModule> = {
       { id: "town_fence_c", textureKey: "fence", x: 1170, y: 720 },
       { id: "town_tower", textureKey: "tower", x: 1290, y: 880, scale: 1.2, alpha: 0.9 },
       { id: "dock_marker", textureKey: "dock", x: 1435, y: 570 },
+      { id: "town_fence_d", textureKey: "fence", x: 1200, y: 720 },
+      { id: "town_fence_e", textureKey: "fence", x: 1230, y: 720 },
       { id: "tree_cluster_1", textureKey: "tree", x: 980, y: 950, scale: 1.25 },
       { id: "tree_cluster_2", textureKey: "tree", x: 1060, y: 935, scale: 1.1 },
       { id: "tree_cluster_3", textureKey: "tree", x: 1160, y: 930, scale: 1.15 },
+      { id: "tree_cluster_4", textureKey: "tree", x: 1235, y: 948, scale: 1.1 },
     ],
     encounterZones: [],
     npcs: [
@@ -52,6 +55,7 @@ export const maps: Record<string, MapModule> = {
         x: 980,
         y: 510,
         color: 0xffd166,
+        storyKey: "mentor_path",
         lines: [
           "Welcome to Mossgrove.",
           "Routes, forest, and the lake all branch from here.",
@@ -69,6 +73,7 @@ export const maps: Record<string, MapModule> = {
         x: 220,
         y: 520,
         color: 0xffcad4,
+        storyKey: "healer_hint",
         lines: [
           "Your team looks fresh.",
           "A proper heal-and-rest loop is next on the town upgrade list.",
@@ -80,9 +85,32 @@ export const maps: Record<string, MapModule> = {
         x: 1240,
         y: 780,
         color: 0xb7b7a4,
+        storyKey: "storyteller_watchtower",
         lines: [
           "That old watchtower marks the road to bigger routes.",
           "Every early map should teach you where to go at a glance.",
+        ],
+      },
+      {
+        id: "dockhand-piers",
+        name: "Dockhand Piers",
+        x: 1380,
+        y: 700,
+        color: 0xbde0fe,
+        lines: [
+          "The ferry crew keeps staring east like the route will answer them back.",
+          "If you make the road safer, Silvermere will feel connected again.",
+        ],
+      },
+      {
+        id: "apprentice-fen",
+        name: "Apprentice Fen",
+        x: 640,
+        y: 470,
+        color: 0xa0c4ff,
+        lines: [
+          "Mentor Liora says strong trainers learn by reading the route as much as battling on it.",
+          "The bridge, reeds, and hidden grove all point toward bigger places beyond this slice.",
         ],
       },
     ],
@@ -96,6 +124,7 @@ export const maps: Record<string, MapModule> = {
         y: 430,
         textureKey: "quest",
         prompt: "Press E to read the Mossgrove notice board",
+        storyKey: "town_board_story",
         lines: [
           "Notice Board: Help the lake ferry reopen by proving the eastern routes are safe.",
         ],
@@ -117,6 +146,18 @@ export const maps: Record<string, MapModule> = {
         ],
         collectedLines: ["The supply crate is empty now."],
         once: true,
+      },
+      {
+        id: "town_tower_plaque",
+        kind: "sign",
+        name: "Watchtower Plaque",
+        x: 1290,
+        y: 980,
+        textureKey: "sign",
+        prompt: "Press E to inspect the watchtower plaque",
+        lines: [
+          "Plaque: Mossgrove Watch once marked the road toward the mountain gate, the ferry dock, and the old castle route beyond the early fields.",
+        ],
       },
     ],
     exits: [
@@ -177,6 +218,7 @@ export const maps: Record<string, MapModule> = {
         x: 560,
         y: 420,
         color: 0xf6bd60,
+        storyKey: "house_guardian_story",
         lines: [
           "The whole Astera Region starts beyond that eastern road.",
           "Rest here whenever you need a quiet room.",
@@ -193,6 +235,7 @@ export const maps: Record<string, MapModule> = {
         y: 340,
         textureKey: "quest",
         prompt: "Press E to read the travel journal",
+        storyKey: "house_journal_story",
         lines: [
           "Journal: Routes should always show a safe path, a risky path, and one thing worth wandering off for.",
         ],
@@ -226,6 +269,7 @@ export const maps: Record<string, MapModule> = {
       { x: 220, y: 320, width: 400, height: 190, color: 0x7ec850, strokeColor: 0x95d86e },
       { x: 820, y: 240, width: 380, height: 230, color: 0x7ec850, strokeColor: 0x95d86e },
       { x: 1480, y: 720, width: 310, height: 230, color: 0x7ec850, strokeColor: 0x95d86e },
+      { x: 1820, y: 240, width: 180, height: 150, color: 0x7ec850, strokeColor: 0x95d86e },
       { x: 1320, y: 160, width: 210, height: 250, color: 0x89d2dc, strokeColor: 0xb3e5fc },
       { x: 1210, y: 160, width: 120, height: 250, color: 0xc8b27a, strokeColor: 0xe5c992 },
       { x: 1760, y: 830, width: 210, height: 140, color: 0x386641, strokeColor: 0x6a994e },
@@ -246,6 +290,9 @@ export const maps: Record<string, MapModule> = {
       { id: "lake_dock_hint", textureKey: "dock", x: 1390, y: 420 },
       { id: "route_tree_1", textureKey: "tree", x: 1860, y: 1010, scale: 1.15 },
       { id: "route_tree_2", textureKey: "tree", x: 1940, y: 1000, scale: 1.1 },
+      { id: "route_tree_3", textureKey: "tree", x: 1670, y: 980, scale: 1.08 },
+      { id: "route_fence_5", textureKey: "fence", x: 508, y: 475 },
+      { id: "route_fence_6", textureKey: "fence", x: 540, y: 475 },
     ],
     encounterZones: [
       {
@@ -263,7 +310,7 @@ export const maps: Record<string, MapModule> = {
         y: 240,
         width: 380,
         height: 230,
-        tableId: "plains_start",
+        tableId: "plains_watch",
         label: "The open field is full of tracks",
       },
       {
@@ -272,11 +319,32 @@ export const maps: Record<string, MapModule> = {
         y: 720,
         width: 310,
         height: 230,
-        tableId: "plains_start",
+        tableId: "plains_watch",
         label: "This patch feels slightly wilder than the road beside it",
       },
+      {
+        id: "route_watch_grass",
+        x: 1820,
+        y: 240,
+        width: 180,
+        height: 150,
+        tableId: "plains_watch",
+        label: "Warm gusts move through the grass below the watchtower",
+      },
     ],
-    npcs: [],
+    npcs: [
+      {
+        id: "watcher-noel",
+        name: "Watcher Noel",
+        x: 1040,
+        y: 450,
+        color: 0xfefae0,
+        lines: [
+          "From this bend you can read the whole route at once: town behind you, forest ahead, lake above, grove below.",
+          "Good maps make even a big region feel understandable.",
+        ],
+      },
+    ],
     trainers: [
       {
         id: "trainer_lina",
@@ -288,6 +356,17 @@ export const maps: Record<string, MapModule> = {
         lines: ["You look like someone ready for the first route battle."],
         battleId: "scoutLinaBattle",
         defeatedLines: ["Stay sharp. The forest ahead is denser than the fields."],
+      },
+      {
+        id: "trainer_june",
+        name: "June",
+        trainerClass: "Picnicker",
+        x: 1080,
+        y: 560,
+        color: 0xffd6a5,
+        lines: ["Roadside rests are better after a proper battle."],
+        battleId: "picnickerJuneBattle",
+        defeatedLines: ["You handled the center route. The lake turnoff will not surprise you."],
       },
       {
         id: "trainer_paul",
@@ -311,6 +390,17 @@ export const maps: Record<string, MapModule> = {
         battleId: "twinsTessBattle",
         defeatedLines: ["If you can handle us, the hidden grove should not scare you."],
       },
+      {
+        id: "trainer_ash",
+        name: "Ash",
+        trainerClass: "Camper",
+        x: 1650,
+        y: 900,
+        color: 0x84a59d,
+        lines: ["I train near the grove because the wild teams hit harder down here."],
+        battleId: "camperAshBattle",
+        defeatedLines: ["You are ready for the detour now. The grove favors curious trainers."],
+      },
     ],
     interactives: [
       {
@@ -321,6 +411,7 @@ export const maps: Record<string, MapModule> = {
         y: 470,
         textureKey: "sign",
         prompt: "Press E to read the route marker",
+        storyKey: "route_sign_story",
         lines: [
           "Route 01: Mossgrove to Verdantveil. Safe lane follows the road; tall grass means wild encounters.",
         ],
@@ -337,6 +428,32 @@ export const maps: Record<string, MapModule> = {
           "You found a supply note tied to the bridge fence. The watchtower ahead makes this route feel patrolled.",
         ],
         collectedLines: ["The cache has already been picked clean."],
+        once: true,
+      },
+      {
+        id: "route_watchtower_note",
+        kind: "quest",
+        name: "Watchtower Note",
+        x: 1910,
+        y: 500,
+        textureKey: "quest",
+        prompt: "Press E to read the watchtower note",
+        lines: [
+          "Watchtower Note: Surveyors marked this junction as the place where plains routes split cleanly toward forest, lake, and hidden grove trails.",
+        ],
+      },
+      {
+        id: "route_wildflower_stash",
+        kind: "loot",
+        name: "Wildflower Stash",
+        x: 1560,
+        y: 980,
+        textureKey: "loot",
+        prompt: "Press E to inspect the wildflower stash",
+        lines: [
+          "You found a wrapped bundle of trail herbs and a sketch of the grove path tucked beneath it.",
+        ],
+        collectedLines: ["Only flattened grass remains where the stash was hidden."],
         once: true,
       },
     ],
@@ -416,6 +533,8 @@ export const maps: Record<string, MapModule> = {
       { id: "forest_tree_4", textureKey: "tree", x: 1670, y: 640, scale: 1.12 },
       { id: "forest_sign", textureKey: "sign", x: 980, y: 680 },
       { id: "forest_watch", textureKey: "tower", x: 1820, y: 980, alpha: 0.65 },
+      { id: "forest_tree_5", textureKey: "tree", x: 1870, y: 1020, scale: 1.08 },
+      { id: "forest_tree_6", textureKey: "tree", x: 560, y: 1060, scale: 1.12 },
     ],
     encounterZones: [
       {
@@ -433,7 +552,7 @@ export const maps: Record<string, MapModule> = {
         y: 200,
         width: 420,
         height: 280,
-        tableId: "forest_edge",
+        tableId: "forest_deep",
         label: "You hear chittering deeper in the trees",
       },
       {
@@ -442,11 +561,32 @@ export const maps: Record<string, MapModule> = {
         y: 760,
         width: 330,
         height: 210,
-        tableId: "forest_edge",
+        tableId: "forest_deep",
         label: "A hidden glade holds rarer tracks",
       },
+      {
+        id: "forest_shadow_bend",
+        x: 460,
+        y: 940,
+        width: 250,
+        height: 140,
+        tableId: "forest_deep",
+        label: "The ground darkens here and the forest sounds fall away",
+      },
     ],
-    npcs: [],
+    npcs: [
+      {
+        id: "ranger-cedar",
+        name: "Ranger Cedar",
+        x: 560,
+        y: 800,
+        color: 0xcce3de,
+        lines: [
+          "Verdantveil teaches quickly: stay on the lit path to travel, step into the glade to hunt stronger wild teams.",
+          "The grove caches are hidden where brave routes break away from safe ones.",
+        ],
+      },
+    ],
     trainers: [
       {
         id: "trainer_ivy",
@@ -458,6 +598,17 @@ export const maps: Record<string, MapModule> = {
         lines: ["The deeper the forest, the bigger the teams get."],
         battleId: "bugCatcherIvyBattle",
         defeatedLines: ["You earned the right to push a little deeper."],
+      },
+      {
+        id: "trainer_lynn",
+        name: "Lynn",
+        trainerClass: "Forager",
+        x: 1180,
+        y: 560,
+        color: 0xbee3db,
+        lines: ["If you can read tracks, you can predict which monsters the forest will send next."],
+        battleId: "foragerLynnBattle",
+        defeatedLines: ["The glade ahead keeps the rarer teams. You can handle them now."],
       },
       {
         id: "trainer_ordo",
@@ -480,6 +631,7 @@ export const maps: Record<string, MapModule> = {
         y: 680,
         textureKey: "sign",
         prompt: "Press E to read the forest marker",
+        storyKey: "forest_marker_story",
         lines: [
           "Verdantveil Glen: stay on the light path if you want safe footing, or cut through the glade for stronger encounters.",
         ],
@@ -497,6 +649,18 @@ export const maps: Record<string, MapModule> = {
         ],
         collectedLines: ["The ranger note has already been taken."],
         once: true,
+      },
+      {
+        id: "forest_shrine_stone",
+        kind: "sign",
+        name: "Shrine Stone",
+        x: 1820,
+        y: 1040,
+        textureKey: "sign",
+        prompt: "Press E to study the shrine stone",
+        lines: [
+          "Shrine Stone: Travelers once crossed from these woods toward mountain stairs, cliff ruins, and the lakeside watch.",
+        ],
       },
     ],
     exits: [
@@ -536,6 +700,8 @@ export const maps: Record<string, MapModule> = {
       { id: "lake_dock", textureKey: "dock", x: 780, y: 520, scale: 1.2 },
       { id: "lake_sign", textureKey: "sign", x: 250, y: 520 },
       { id: "lake_tower", textureKey: "tower", x: 430, y: 860, alpha: 0.7 },
+      { id: "lake_tree_1", textureKey: "tree", x: 230, y: 880, scale: 1.05 },
+      { id: "lake_tree_2", textureKey: "tree", x: 620, y: 890, scale: 1.08 },
     ],
     encounterZones: [
       {
@@ -553,11 +719,32 @@ export const maps: Record<string, MapModule> = {
         y: 640,
         width: 220,
         height: 160,
-        tableId: "lake_shore",
+        tableId: "lake_deep",
         label: "The southern reeds look calmer, but they hide stronger water types",
       },
+      {
+        id: "dockside_shallows",
+        x: 620,
+        y: 420,
+        width: 140,
+        height: 140,
+        tableId: "lake_deep",
+        label: "The shallows near the dock churn with stronger lake teams",
+      },
     ],
-    npcs: [],
+    npcs: [
+      {
+        id: "harbor-suri",
+        name: "Harbor Suri",
+        x: 220,
+        y: 640,
+        color: 0xffddd2,
+        lines: [
+          "When the ferry runs again, Silvermere will connect this whole slice to the islands beyond.",
+          "Until then, the reeds are the only way to test if your team can handle the water route.",
+        ],
+      },
+    ],
     trainers: [
       {
         id: "trainer_mira",
@@ -569,6 +756,17 @@ export const maps: Record<string, MapModule> = {
         lines: ["When the ferry opens, this lake becomes a whole new route."],
         battleId: "swimmerMiraBattle",
         defeatedLines: ["The islands out there will need bigger teams than mine."],
+      },
+      {
+        id: "trainer_nox",
+        name: "Nox",
+        trainerClass: "Ferry Cadet",
+        x: 530,
+        y: 470,
+        color: 0xa9def9,
+        lines: ["The ferry stays tied up, so I train on the dock and keep the route honest."],
+        battleId: "ferryCadetNoxBattle",
+        defeatedLines: ["You have the footing for the shore watch now. The deeper water still bites."],
       },
       {
         id: "trainer_ren",
@@ -591,6 +789,7 @@ export const maps: Record<string, MapModule> = {
         y: 520,
         textureKey: "quest",
         prompt: "Press E to read the ferry notice",
+        storyKey: "lake_notice_story",
         lines: [
           "Ferry Notice: Service is paused until Route 01 is declared safe for travelers.",
         ],
@@ -609,6 +808,18 @@ export const maps: Record<string, MapModule> = {
         ],
         collectedLines: ["The tackle box is already open and empty."],
         once: true,
+      },
+      {
+        id: "lake_weather_post",
+        kind: "sign",
+        name: "Weather Post",
+        x: 430,
+        y: 920,
+        textureKey: "sign",
+        prompt: "Press E to read the weather post",
+        lines: [
+          "Weather Post: Storm fronts from the islands push rare wild teams toward the reeds and the dock shallows.",
+        ],
       },
     ],
     exits: [
@@ -647,6 +858,8 @@ export const maps: Record<string, MapModule> = {
       { id: "grove_tree_a", textureKey: "tree", x: 210, y: 660, scale: 1.2 },
       { id: "grove_tree_b", textureKey: "tree", x: 930, y: 660, scale: 1.15 },
       { id: "grove_sign", textureKey: "sign", x: 760, y: 300 },
+      { id: "grove_tree_c", textureKey: "tree", x: 390, y: 690, scale: 1.1 },
+      { id: "grove_tree_d", textureKey: "tree", x: 1030, y: 660, scale: 1.05 },
     ],
     encounterZones: [
       {
@@ -655,7 +868,7 @@ export const maps: Record<string, MapModule> = {
         y: 230,
         width: 320,
         height: 200,
-        tableId: "forest_edge",
+        tableId: "grove_rare",
         label: "A rarer hush hangs over this grove",
       },
       {
@@ -664,12 +877,35 @@ export const maps: Record<string, MapModule> = {
         y: 520,
         width: 220,
         height: 160,
-        tableId: "forest_edge",
+        tableId: "forest_deep",
         label: "Even the edge of the grove feels a little hidden",
       },
     ],
-    npcs: [],
+    npcs: [
+      {
+        id: "keeper-ilex",
+        name: "Keeper Ilex",
+        x: 420,
+        y: 560,
+        color: 0xcaffbf,
+        lines: [
+          "Curious trainers usually find the hidden grove before the map says they should.",
+          "That is why the wild teams here are stronger, and why the clues are worth more.",
+        ],
+      },
+    ],
     trainers: [
+      {
+        id: "trainer_pip",
+        name: "Pip",
+        trainerClass: "Forager",
+        x: 530,
+        y: 360,
+        color: 0xffd6a5,
+        lines: ["I only challenge the trainers who actually bother finding this grove."],
+        battleId: "foragerPipBattle",
+        defeatedLines: ["Good. The grove marker and the old stone will make more sense to you now."],
+      },
       {
         id: "trainer_sable",
         name: "Sable",
@@ -691,6 +927,7 @@ export const maps: Record<string, MapModule> = {
         y: 300,
         textureKey: "sign",
         prompt: "Press E to read the grove marker",
+        storyKey: "grove_marker_story",
         lines: [
           "Hidden Grove: rare encounters and strong trainers should feel earned, not random.",
         ],
@@ -708,6 +945,18 @@ export const maps: Record<string, MapModule> = {
         ],
         collectedLines: ["The satchel already gave up its notes."],
         once: true,
+      },
+      {
+        id: "grove_old_stone",
+        kind: "quest",
+        name: "Old Grove Stone",
+        x: 350,
+        y: 560,
+        textureKey: "quest",
+        prompt: "Press E to inspect the old grove stone",
+        lines: [
+          "Old Stone: Paths from the hidden grove once continued toward island cliffs, mountain stairs, and a ruined castle road now lost to the wider region.",
+        ],
       },
     ],
     exits: [

@@ -71,4 +71,23 @@ describe("worldState persistence", () => {
     expect(module.worldState.selectedDifficulty).toBe("adventure");
     expect(module.worldState.introCompleted).toBe(false);
   });
+
+  it("falls back to defaults when avatar or difficulty values are invalid", async () => {
+    vi.stubGlobal(
+      "window",
+      makeWindow({
+        pokemon_game_world_state_v1: JSON.stringify({
+          selectedAvatar: "unknown",
+          selectedDifficulty: "nightmare",
+          introCompleted: true,
+        }),
+      }),
+    );
+
+    const module = await import("../src/game/worldState");
+
+    expect(module.worldState.selectedAvatar).toBe("blaze");
+    expect(module.worldState.selectedDifficulty).toBe("adventure");
+    expect(module.worldState.introCompleted).toBe(true);
+  });
 });
