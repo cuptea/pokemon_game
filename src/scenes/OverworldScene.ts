@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { registry } from "../data/registry";
 import { getStoryProfile, getStoryStatus } from "../data/stories";
 import { getStoryVisualTheme, toHexColor, type StoryVisualTheme } from "../game/storyVisuals";
+import { getTerrainStyle, isWaterTone } from "../game/terrainRender";
 import { createUiPanel } from "../game/uiSkin";
 import { resetWorldState, saveWorldState, worldState } from "../game/worldState";
 import { DIFFICULTY_RULES, GAME_FONT, PLAYER_AVATARS, THEME } from "../game/theme";
@@ -384,8 +385,7 @@ export class OverworldScene extends Phaser.Scene {
   }
 
   private addPatchAccent(patch: WorldPatch): void {
-    const waterTones = new Set([0x89d2dc, 0x5fa8d3, 0x7ec8e3, 0x95d5e8, 0xa9def9, 0x4f83aa, 0x5688b8]);
-    if (!waterTones.has(patch.color)) {
+    if (!isWaterTone(patch.color)) {
       return;
     }
 
@@ -418,7 +418,7 @@ export class OverworldScene extends Phaser.Scene {
       return;
     }
 
-    const scale = decoration.scale ?? 1;
+    const scale = (decoration.scale ?? 1) * this.getWorldTextureScale(decoration.textureKey);
     const aura = this.add
       .ellipse(
         decoration.x,
@@ -502,13 +502,7 @@ export class OverworldScene extends Phaser.Scene {
     const graphics = this.add.graphics();
 
     for (const patch of this.activePatches) {
-      graphics.fillStyle(patch.color, patch.alpha ?? 1);
-      graphics.fillRect(patch.x, patch.y, patch.width, patch.height);
-      if (patch.strokeColor !== undefined) {
-        graphics.lineStyle(3, patch.strokeColor, 0.9);
-        graphics.strokeRect(patch.x, patch.y, patch.width, patch.height);
-      }
-      this.addPatchAccent(patch);
+      this.drawTerrainPatch(graphics, patch);
     }
 
     for (const wall of this.map.walls) {
@@ -527,7 +521,7 @@ export class OverworldScene extends Phaser.Scene {
       this.add
         .image(decoration.x, decoration.y, decoration.textureKey)
         .setTint(decoration.tint ?? 0xffffff)
-        .setScale(decoration.scale ?? 1)
+        .setScale((decoration.scale ?? 1) * this.getWorldTextureScale(decoration.textureKey))
         .setAlpha(decoration.alpha ?? 1)
         .setDepth(decoration.y);
     }
@@ -545,6 +539,7 @@ export class OverworldScene extends Phaser.Scene {
       const itemSprite = this.add
         .image(worldItem.x, worldItem.y, worldItem.textureKey)
         .setTint(worldItem.tint ?? 0xffffff)
+        .setScale(this.getWorldTextureScale(worldItem.textureKey))
         .setDepth(worldItem.y);
 
       if (worldItem.kind !== "sign") {
@@ -576,6 +571,54 @@ export class OverworldScene extends Phaser.Scene {
       sprite.setDepth(trainer.y);
       this.addCharacterIdleTween(sprite, trainer.id);
     }
+  }
+
+  private getWorldTextureScale(textureKey: string): number {
+    switch (textureKey) {
+      case "tree":
+        return 3.4;
+      case "fence":
+        return 2.8;
+      case "sign":
+        return 2.4;
+      case "dock":
+        return 2.6;
+      default:
+        return 1;
+    }
+  }
+
+  private drawTerrainPatch(graphics: Phaser.GameObjects.Graphics, patch: WorldPatch): void {
+    const terrainStyle = getTerrainStyle(this.map.id, patch);
+
+    if (terrainStyle.textureKey) {
+      const terrain = this.add
+        .tileSprite(
+          patch.x + patch.width / 2,
+          patch.y + patch.height / 2,
+          patch.width,
+          patch.height,
+          terrainStyle.textureKey,
+        )
+        .setDepth(-24);
+      terrain.tileScaleX = 2;
+      terrain.tileScaleY = 2;
+
+      if (terrainStyle.overlayAlpha > 0) {
+        graphics.fillStyle(patch.color, terrainStyle.overlayAlpha);
+        graphics.fillRect(patch.x, patch.y, patch.width, patch.height);
+      }
+    } else {
+      graphics.fillStyle(patch.color, patch.alpha ?? 1);
+      graphics.fillRect(patch.x, patch.y, patch.width, patch.height);
+    }
+
+    if (patch.strokeColor !== undefined) {
+      graphics.lineStyle(3, patch.strokeColor, terrainStyle.textureKey ? 0.72 : 0.9);
+      graphics.strokeRect(patch.x, patch.y, patch.width, patch.height);
+    }
+
+    this.addPatchAccent(patch);
   }
 
   private spawnPlayer(x: number, y: number): void {
