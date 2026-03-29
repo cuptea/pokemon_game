@@ -118,6 +118,7 @@ const TRANSLATIONS: Record<SupportedLanguage, Record<string, string>> = {
     "overworld.progress_reset": "Progress reset. Mossgrove Town is fresh again.",
     "overworld.party_lead":
       "{name} is now leading your {partySize}-buddy party.",
+    "overworld.lead_fallback": "Lead buddy",
     "story.blaze.long_arc":
       "Blaze starts by chasing a stray flare from Mossgrove's watchtower, then discovers that the ember signs are part of a false signal lattice running through the watch peaks and quarry roads toward Astera Citadel.",
     "story.mist.long_arc":
@@ -226,6 +227,8 @@ const TRANSLATIONS: Record<SupportedLanguage, Record<string, string>> = {
     "battle.fainted": "{name} fainted",
     "battle.quiz_move": "Quiz your move against {name}",
     "battle.send_in": "{name} steps in",
+    "battle.opening_wild": "{name} blocks the path. {intro}",
+    "battle.opening_trainer": "{label}: {name}. {intro}",
     "battle.enemy_status": "{name}  Lv {level}\nHP {hp}/{maxHp}\nParty {index}/{total}",
     "battle.player_status":
       "{name}  Lv {level}\nHP {hp}/{maxHp}\nParty {index}/{total}\nQuiz Move {move}",
@@ -357,6 +360,7 @@ const TRANSLATIONS: Record<SupportedLanguage, Record<string, string>> = {
     "overworld.hud_controls": "移动：方向键/WASD。互动：E。队伍：C。{chapter}。目标：{objective}",
     "overworld.progress_reset": "进度已重置。苔谷镇恢复到初始状态。",
     "overworld.party_lead": "{name} 现在是你 {partySize} 人战斗小队的领队。",
+    "overworld.lead_fallback": "领队伙伴",
     "story.blaze.long_arc":
       "Blaze 从苔谷镇的瞭望塔火光出发，逐渐发现那些余烬信号其实是一张通往阿斯特拉城堡旧道的伪装信号网。",
     "story.mist.long_arc":
@@ -458,6 +462,8 @@ const TRANSLATIONS: Record<SupportedLanguage, Record<string, string>> = {
     "battle.fainted": "{name} 倒下了",
     "battle.quiz_move": "用问答攻击对付 {name}",
     "battle.send_in": "{name} 上场了",
+    "battle.opening_wild": "{name} 挡住了去路。{intro}",
+    "battle.opening_trainer": "{label}：{name}。{intro}",
     "battle.enemy_status": "{name}  等级 {level}\nHP {hp}/{maxHp}\n队伍 {index}/{total}",
     "battle.player_status":
       "{name}  等级 {level}\nHP {hp}/{maxHp}\n队伍 {index}/{total}\n问答招式 {move}",
@@ -604,6 +610,7 @@ const TRANSLATIONS: Record<SupportedLanguage, Record<string, string>> = {
       "Fortschritt zurueckgesetzt. Mossgrove Town ist wieder frisch.",
     "overworld.party_lead":
       "{name} fuehrt nun dein {partySize}-koepfiges Kampfteam an.",
+    "overworld.lead_fallback": "Fuehrender Gefaehrte",
     "story.blaze.long_arc":
       "Blaze jagt zuerst einer einsamen Turmflamme aus Mossgrove hinterher und entdeckt dann, dass die Glutzeichen zu einem falschen Signalnetz gehoeren, das Richtung Astera-Zitadelle fuehrt.",
     "story.mist.long_arc":
@@ -713,6 +720,8 @@ const TRANSLATIONS: Record<SupportedLanguage, Record<string, string>> = {
     "battle.fainted": "{name} ist besiegt",
     "battle.quiz_move": "Quiz deinen Zug gegen {name}",
     "battle.send_in": "{name} kommt ins Feld",
+    "battle.opening_wild": "{name} versperrt den Weg. {intro}",
+    "battle.opening_trainer": "{label}: {name}. {intro}",
     "battle.enemy_status": "{name}  Lv {level}\nKP {hp}/{maxHp}\nTeam {index}/{total}",
     "battle.player_status":
       "{name}  Lv {level}\nKP {hp}/{maxHp}\nTeam {index}/{total}\nQuiz-Zug {move}",
@@ -774,6 +783,10 @@ export function getSupportedLanguages(): SupportedLanguage[] {
 
 export function getLanguageLabel(language: SupportedLanguage): string {
   return LANGUAGE_LABELS[language];
+}
+
+export function getTranslationKeys(language: SupportedLanguage = "en"): string[] {
+  return Object.keys(TRANSLATIONS[language]);
 }
 
 export function t(

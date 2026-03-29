@@ -419,8 +419,15 @@ export class BattleScene extends Phaser.Scene {
     this.setBanner(this.introText, THEME.accent);
     this.infoText.setText(
       this.battleSource === "wild"
-        ? `${this.currentEnemy.name} blocks the path. ${t("battle.quiz_intro")}`
-        : `${t("battle.trainer_battle")}: ${this.currentEnemy.name}. ${t("battle.quiz_intro")}`,
+        ? t("battle.opening_wild", {
+            name: this.currentEnemy.name,
+            intro: t("battle.quiz_intro"),
+          })
+        : t("battle.opening_trainer", {
+            label: t("battle.trainer_battle"),
+            name: this.currentEnemy.name,
+            intro: t("battle.quiz_intro"),
+          }),
     );
 
     this.time.delayedCall(850, () => {

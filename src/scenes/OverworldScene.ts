@@ -1474,7 +1474,9 @@ export class OverworldScene extends Phaser.Scene {
     this.refreshStatus();
     this.setMessage(
       t("overworld.party_lead", {
-        name: registry.creatures[worldState.selectedPartyCreatureIds[0]]?.name ?? "Lead buddy",
+        name:
+          registry.creatures[worldState.selectedPartyCreatureIds[0]]?.name ??
+          t("overworld.lead_fallback"),
         partySize: worldState.selectedPartyCreatureIds.length,
       }),
     );

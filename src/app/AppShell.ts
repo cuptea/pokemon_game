@@ -190,7 +190,7 @@ class AppShell {
     identity.style.gap = "4px";
 
     const userLabel = document.createElement("strong");
-    userLabel.textContent = this.sessionUser?.displayName ?? "Trainer";
+    userLabel.textContent = this.sessionUser?.displayName ?? t("app.trainer_default");
     userLabel.style.fontSize = "18px";
     userLabel.style.color = "#f8f9fa";
 

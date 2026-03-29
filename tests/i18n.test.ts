@@ -71,4 +71,17 @@ describe("i18n runtime", () => {
     expect(module.getCurrentLanguage()).toBe("en");
     expect(module.t("battle.run")).toBe("Run");
   });
+
+  it("covers every English translation key in Chinese and German", async () => {
+    vi.stubGlobal("window", makeWindow());
+
+    const module = await import("../src/game/i18n");
+
+    const englishKeys = module.getTranslationKeys("en");
+
+    for (const key of englishKeys) {
+      expect(module.t(key, {}, "zh")).not.toBe(key);
+      expect(module.t(key, {}, "de")).not.toBe(key);
+    }
+  });
 });
