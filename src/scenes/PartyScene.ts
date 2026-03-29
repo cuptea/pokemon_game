@@ -2,6 +2,7 @@ import Phaser from "phaser";
 
 import { registry } from "../data/registry";
 import {
+  MAX_PARTY_SIZE,
   getRequiredPartySize,
   movePartyCreatureToLead,
   normalizePartySelection,
@@ -151,7 +152,7 @@ export class PartyScene extends Phaser.Scene {
       this.ownedButtons.push(button);
     });
 
-    for (let index = 0; index < 3; index += 1) {
+    for (let index = 0; index < MAX_PARTY_SIZE; index += 1) {
       const creatureId = this.selectedPartyCreatureIds[index];
       const creatureName = creatureId ? registry.creatures[creatureId]?.name ?? creatureId : "[Empty]";
       const button = this.add

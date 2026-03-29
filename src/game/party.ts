@@ -1,4 +1,4 @@
-const MAX_PARTY_SIZE = 3;
+export const MAX_PARTY_SIZE = 3;
 
 export function normalizePartySelection(
   ownedCreatureIds: string[],
