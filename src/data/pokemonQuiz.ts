@@ -1,3 +1,5 @@
+import { getCurrentLanguage, type SupportedLanguage } from "../game/i18n";
+
 export type PokemonQuizSourceKind = "official" | "bulbapedia";
 
 export type PokemonQuizSource = {
@@ -5,6 +7,17 @@ export type PokemonQuizSource = {
   label: string;
   url: string;
   note: string;
+};
+
+type LocalizedString = Record<SupportedLanguage, string>;
+
+export type PokemonQuizLocalizedEntry = {
+  id: string;
+  prompt: LocalizedString;
+  correctAnswer: LocalizedString;
+  wrongAnswers: [LocalizedString, LocalizedString];
+  weight: number;
+  references: readonly PokemonQuizSource[];
 };
 
 export type PokemonQuizEntry = {
@@ -16,42 +29,50 @@ export type PokemonQuizEntry = {
   references: readonly PokemonQuizSource[];
 };
 
+const text = (en: string, zh: string, de: string): LocalizedString => ({ en, zh, de });
+
 const officialSources = {
   bulbasaur: {
     kind: "official",
     label: "Pokemon.com Pokedex: Bulbasaur",
     url: "https://www.pokemon.com/us/pokedex/bulbasaur",
-    note: "Official Pokedex page listing Bulbasaur's type, abilities, and weaknesses.",
+    note: "Official Pokedex page listing Bulbasaur's type, weaknesses, and evolution line.",
   },
   charmander: {
     kind: "official",
     label: "Pokemon.com Pokedex: Charmander",
-    url: "https://www.pokemon.com/us/pokedex/charmander?TB_iframe=true&height=921.6&width=921.6",
-    note: "Official Pokedex page listing Charmander's type, abilities, and weaknesses.",
+    url: "https://www.pokemon.com/us/pokedex/charmander",
+    note: "Official Pokedex page listing Charmander's type, weaknesses, and evolution line.",
+  },
+  squirtle: {
+    kind: "official",
+    label: "Pokemon.com Pokedex: Squirtle",
+    url: "https://www.pokemon.com/us/pokedex/squirtle",
+    note: "Official Pokedex page listing Squirtle's type, weaknesses, and evolution line.",
+  },
+  pikachu: {
+    kind: "official",
+    label: "Pokemon.com Pokedex: Pikachu",
+    url: "https://www.pokemon.com/us/pokedex/pikachu",
+    note: "Official Pokedex page listing Pikachu's type and evolution line.",
   },
   gastly: {
     kind: "official",
     label: "Pokemon.com Pokedex: Gastly",
-    url: "https://www.pokemon.com/it/pokedex/gastly",
-    note: "Official Pokedex page listing Gastly's type, ability, and weaknesses.",
+    url: "https://www.pokemon.com/us/pokedex/gastly",
+    note: "Official Pokedex page listing Gastly's type and evolution line.",
   },
-  mudkip: {
+  litwick: {
     kind: "official",
-    label: "Pokemon.com Pokedex: Mudkip",
-    url: "https://www.pokemon.com/br/pokedex/mudkip",
-    note: "Official Pokedex page listing Mudkip's type, ability, and weaknesses.",
+    label: "Pokemon.com Pokedex: Litwick",
+    url: "https://www.pokemon.com/us/pokedex/litwick",
+    note: "Official Pokedex page listing Litwick's type, weaknesses, and evolution line.",
   },
-  porygon: {
+  eevee: {
     kind: "official",
-    label: "Pokemon.com Pokedex: Porygon",
-    url: "https://www.pokemon.com/uk/pokedex/porygon",
-    note: "Official Pokedex page listing Porygon's type, abilities, and weaknesses.",
-  },
-  staryu: {
-    kind: "official",
-    label: "Pokemon.com Pokedex: Staryu",
-    url: "https://www.pokemon.com/uk/pokedex/staryu",
-    note: "Official Pokedex page listing Staryu's type, abilities, and weaknesses.",
+    label: "Pokemon.com Pokedex: Eevee",
+    url: "https://www.pokemon.com/us/pokedex/eevee",
+    note: "Official Pokedex page listing Eevee's type and evolutions.",
   },
 } as const satisfies Record<string, PokemonQuizSource>;
 
@@ -60,172 +81,405 @@ const bulbapediaSources = {
     kind: "bulbapedia",
     label: "Bulbapedia: Thunderbolt (move)",
     url: "https://bulbapedia.bulbagarden.net/wiki/Thunderbolt_%28move%29",
-    note: "Used only for move-category taxonomy where the official Pokedex pages do not apply.",
+    note: "Used for Thunderbolt's move type and category.",
   },
   flamethrower: {
     kind: "bulbapedia",
     label: "Bulbapedia: Flamethrower (move)",
     url: "https://bulbapedia.bulbagarden.net/wiki/Flamethrower_%28move%29",
-    note: "Used only for move-category taxonomy where the official Pokedex pages do not apply.",
+    note: "Used for Flamethrower's move type and category.",
   },
   quickAttack: {
     kind: "bulbapedia",
     label: "Bulbapedia: Quick Attack (move)",
     url: "https://bulbapedia.bulbagarden.net/wiki/Quick_Attack",
-    note: "Used only for move-category taxonomy where the official Pokedex pages do not apply.",
+    note: "Used for Quick Attack's move type and category.",
   },
   growl: {
     kind: "bulbapedia",
     label: "Bulbapedia: Growl (move)",
     url: "https://bulbapedia.bulbagarden.net/wiki/Growl_%28move%29",
-    note: "Used only for move-category taxonomy where the official Pokedex pages do not apply.",
+    note: "Used for Growl's move type and category.",
   },
 } as const satisfies Record<string, PokemonQuizSource>;
 
-export const pokemonQuizEntries: readonly PokemonQuizEntry[] = [
+const localizedPokemonQuizEntries: readonly PokemonQuizLocalizedEntry[] = [
   {
     id: "pk-bulbasaur-type",
-    prompt: "According to the official Pokedex, what type is Bulbasaur?",
-    correctAnswer: "Grass / Poison",
-    wrongAnswers: ["Grass / Fairy", "Bug / Poison"],
+    prompt: text(
+      "What type is Bulbasaur?",
+      "妙蛙种子的属性是什么？",
+      "Welchen Typ hat Bulbasaur?",
+    ),
+    correctAnswer: text("Grass / Poison", "草 / 毒", "Pflanze / Gift"),
+    wrongAnswers: [
+      text("Grass / Fairy", "草 / 妖精", "Pflanze / Fee"),
+      text("Bug / Poison", "虫 / 毒", "Kaefer / Gift"),
+    ],
+    weight: 1.2,
+    references: [officialSources.bulbasaur],
+  },
+  {
+    id: "pk-bulbasaur-evolution",
+    prompt: text(
+      "Which Pokemon does Bulbasaur evolve into first?",
+      "妙蛙种子第一次进化会变成哪只宝可梦？",
+      "Zu welchem Pokemon entwickelt sich Bulbasaur zuerst?",
+    ),
+    correctAnswer: text("Ivysaur", "妙蛙草", "Bisaknosp"),
+    wrongAnswers: [
+      text("Venusaur", "妙蛙花", "Bisaflor"),
+      text("Charmander", "小火龙", "Glumanda"),
+    ],
     weight: 1.15,
     references: [officialSources.bulbasaur],
   },
   {
-    id: "pk-bulbasaur-ability",
-    prompt: "Which ability is listed for Bulbasaur on Pokemon.com?",
-    correctAnswer: "Overgrow",
-    wrongAnswers: ["Blaze", "Torrent"],
-    weight: 1.05,
-    references: [officialSources.bulbasaur],
-  },
-  {
     id: "pk-bulbasaur-weakness",
-    prompt: "Which of these is listed as a Bulbasaur weakness on the official Pokedex?",
-    correctAnswer: "Fire",
-    wrongAnswers: ["Electric", "Fairy"],
+    prompt: text(
+      "Which of these is a listed weakness of Bulbasaur?",
+      "下面哪一种是妙蛙种子的弱点？",
+      "Welche dieser Typen ist eine genannte Schwaeche von Bulbasaur?",
+    ),
+    correctAnswer: text("Fire", "火", "Feuer"),
+    wrongAnswers: [
+      text("Electric", "电", "Elektro"),
+      text("Fairy", "妖精", "Fee"),
+    ],
     weight: 1.05,
     references: [officialSources.bulbasaur],
   },
   {
     id: "pk-charmander-type",
-    prompt: "According to the official Pokedex, what type is Charmander?",
-    correctAnswer: "Fire",
-    wrongAnswers: ["Electric", "Fire / Dragon"],
+    prompt: text(
+      "What type is Charmander?",
+      "小火龙的属性是什么？",
+      "Welchen Typ hat Charmander?",
+    ),
+    correctAnswer: text("Fire", "火", "Feuer"),
+    wrongAnswers: [
+      text("Fire / Dragon", "火 / 龙", "Feuer / Drache"),
+      text("Electric", "电", "Elektro"),
+    ],
+    weight: 1.2,
+    references: [officialSources.charmander],
+  },
+  {
+    id: "pk-charmander-evolution",
+    prompt: text(
+      "Which Pokemon does Charmander evolve into first?",
+      "小火龙第一次进化会变成哪只宝可梦？",
+      "Zu welchem Pokemon entwickelt sich Charmander zuerst?",
+    ),
+    correctAnswer: text("Charmeleon", "火恐龙", "Glutexo"),
+    wrongAnswers: [
+      text("Charizard", "喷火龙", "Glurak"),
+      text("Wartortle", "卡咪龟", "Schillok"),
+    ],
+    weight: 1.1,
+    references: [officialSources.charmander],
+  },
+  {
+    id: "pk-squirtle-type",
+    prompt: text(
+      "What type is Squirtle?",
+      "杰尼龟的属性是什么？",
+      "Welchen Typ hat Squirtle?",
+    ),
+    correctAnswer: text("Water", "水", "Wasser"),
+    wrongAnswers: [
+      text("Water / Ice", "水 / 冰", "Wasser / Eis"),
+      text("Ground", "地面", "Boden"),
+    ],
+    weight: 1.2,
+    references: [officialSources.squirtle],
+  },
+  {
+    id: "pk-squirtle-evolution",
+    prompt: text(
+      "Which Pokemon does Squirtle evolve into first?",
+      "杰尼龟第一次进化会变成哪只宝可梦？",
+      "Zu welchem Pokemon entwickelt sich Squirtle zuerst?",
+    ),
+    correctAnswer: text("Wartortle", "卡咪龟", "Schillok"),
+    wrongAnswers: [
+      text("Blastoise", "水箭龟", "Turtok"),
+      text("Ivysaur", "妙蛙草", "Bisaknosp"),
+    ],
+    weight: 1.1,
+    references: [officialSources.squirtle],
+  },
+  {
+    id: "pk-squirtle-weakness",
+    prompt: text(
+      "Which of these is a listed weakness of Squirtle?",
+      "下面哪一种是杰尼龟的弱点？",
+      "Welche dieser Typen ist eine genannte Schwaeche von Squirtle?",
+    ),
+    correctAnswer: text("Electric", "电", "Elektro"),
+    wrongAnswers: [
+      text("Fire", "火", "Feuer"),
+      text("Steel", "钢", "Stahl"),
+    ],
+    weight: 1.05,
+    references: [officialSources.squirtle],
+  },
+  {
+    id: "pk-pikachu-type",
+    prompt: text(
+      "What type is Pikachu?",
+      "皮卡丘的属性是什么？",
+      "Welchen Typ hat Pikachu?",
+    ),
+    correctAnswer: text("Electric", "电", "Elektro"),
+    wrongAnswers: [
+      text("Normal", "一般", "Normal"),
+      text("Electric / Fairy", "电 / 妖精", "Elektro / Fee"),
+    ],
     weight: 1.15,
-    references: [officialSources.charmander],
+    references: [officialSources.pikachu],
   },
   {
-    id: "pk-charmander-ability",
-    prompt: "Which ability is listed for Charmander on Pokemon.com?",
-    correctAnswer: "Blaze",
-    wrongAnswers: ["Static", "Overgrow"],
-    weight: 1.05,
-    references: [officialSources.charmander],
-  },
-  {
-    id: "pk-charmander-weakness",
-    prompt: "Which of these is listed as a Charmander weakness on the official Pokedex?",
-    correctAnswer: "Ground",
-    wrongAnswers: ["Grass", "Psychic"],
-    weight: 1.05,
-    references: [officialSources.charmander],
+    id: "pk-pikachu-evolution",
+    prompt: text(
+      "Which Pokemon does Pikachu evolve into?",
+      "皮卡丘会进化成哪只宝可梦？",
+      "Zu welchem Pokemon entwickelt sich Pikachu?",
+    ),
+    correctAnswer: text("Raichu", "雷丘", "Raichu"),
+    wrongAnswers: [
+      text("Pichu", "皮丘", "Pichu"),
+      text("Electabuzz", "电击兽", "Elektek"),
+    ],
+    weight: 1.1,
+    references: [officialSources.pikachu],
   },
   {
     id: "pk-gastly-type",
-    prompt: "According to the official Pokedex, what type is Gastly?",
-    correctAnswer: "Ghost / Poison",
-    wrongAnswers: ["Ghost", "Dark / Poison"],
+    prompt: text(
+      "What type is Gastly?",
+      "鬼斯的属性是什么？",
+      "Welchen Typ hat Gastly?",
+    ),
+    correctAnswer: text("Ghost / Poison", "幽灵 / 毒", "Geist / Gift"),
+    wrongAnswers: [
+      text("Ghost", "幽灵", "Geist"),
+      text("Dark / Poison", "恶 / 毒", "Unlicht / Gift"),
+    ],
+    weight: 1.15,
+    references: [officialSources.gastly],
+  },
+  {
+    id: "pk-gastly-evolution",
+    prompt: text(
+      "Which Pokemon does Gastly evolve into first?",
+      "鬼斯第一次进化会变成哪只宝可梦？",
+      "Zu welchem Pokemon entwickelt sich Gastly zuerst?",
+    ),
+    correctAnswer: text("Haunter", "鬼斯通", "Alpollo"),
+    wrongAnswers: [
+      text("Gengar", "耿鬼", "Gengar"),
+      text("Muk", "臭臭泥", "Sleimok"),
+    ],
     weight: 1.1,
     references: [officialSources.gastly],
   },
   {
-    id: "pk-gastly-ability",
-    prompt: "Which ability is listed for Gastly on Pokemon.com?",
-    correctAnswer: "Levitate",
-    wrongAnswers: ["Pressure", "Static"],
-    weight: 1.05,
-    references: [officialSources.gastly],
+    id: "pk-litwick-type",
+    prompt: text(
+      "What type is Litwick?",
+      "烛光灵的属性是什么？",
+      "Welchen Typ hat Litwick?",
+    ),
+    correctAnswer: text("Ghost / Fire", "幽灵 / 火", "Geist / Feuer"),
+    wrongAnswers: [
+      text("Fire", "火", "Feuer"),
+      text("Ghost / Psychic", "幽灵 / 超能力", "Geist / Psycho"),
+    ],
+    weight: 1.1,
+    references: [officialSources.litwick],
   },
   {
-    id: "pk-mudkip-type",
-    prompt: "According to the official Pokedex, what type is Mudkip?",
-    correctAnswer: "Water",
-    wrongAnswers: ["Water / Ground", "Ice"],
+    id: "pk-litwick-evolution",
+    prompt: text(
+      "Which Pokemon does Litwick evolve into first?",
+      "烛光灵第一次进化会变成哪只宝可梦？",
+      "Zu welchem Pokemon entwickelt sich Litwick zuerst?",
+    ),
+    correctAnswer: text("Lampent", "灯火幽灵", "Laternecto"),
+    wrongAnswers: [
+      text("Chandelure", "水晶灯火灵", "Skelabra"),
+      text("Gastly", "鬼斯", "Nebulak"),
+    ],
     weight: 1.05,
-    references: [officialSources.mudkip],
+    references: [officialSources.litwick],
   },
   {
-    id: "pk-mudkip-ability",
-    prompt: "Which ability is listed for Mudkip on Pokemon.com?",
-    correctAnswer: "Torrent",
-    wrongAnswers: ["Sturdy", "Blaze"],
+    id: "pk-eevee-type",
+    prompt: text(
+      "What type is Eevee?",
+      "伊布的属性是什么？",
+      "Welchen Typ hat Eevee?",
+    ),
+    correctAnswer: text("Normal", "一般", "Normal"),
+    wrongAnswers: [
+      text("Fairy", "妖精", "Fee"),
+      text("Normal / Psychic", "一般 / 超能力", "Normal / Psycho"),
+    ],
     weight: 1.05,
-    references: [officialSources.mudkip],
+    references: [officialSources.eevee],
   },
   {
-    id: "pk-porygon-type",
-    prompt: "According to the official Pokedex, what type is Porygon?",
-    correctAnswer: "Normal",
-    wrongAnswers: ["Electric", "Normal / Psychic"],
+    id: "pk-eevee-evolution",
+    prompt: text(
+      "Which of these is one of Eevee's evolutions?",
+      "下面哪一只是伊布的进化形？",
+      "Welche dieser Entwicklungen gehoert zu Eevee?",
+    ),
+    correctAnswer: text("Vaporeon", "水伊布", "Aquana"),
+    wrongAnswers: [
+      text("Wartortle", "卡咪龟", "Schillok"),
+      text("Dragonair", "哈克龙", "Dragonir"),
+    ],
     weight: 1.05,
-    references: [officialSources.porygon],
+    references: [officialSources.eevee],
   },
   {
-    id: "pk-porygon-ability",
-    prompt: "Which ability is listed for Porygon on Pokemon.com?",
-    correctAnswer: "Download",
-    wrongAnswers: ["Levitate", "Torrent"],
+    id: "pk-thunderbolt-type",
+    prompt: text(
+      "What type of move is Thunderbolt?",
+      "十万伏特是什么属性的招式？",
+      "Welchen Typ hat die Attacke Donnerblitz?",
+    ),
+    correctAnswer: text("Electric", "电", "Elektro"),
+    wrongAnswers: [
+      text("Water", "水", "Wasser"),
+      text("Normal", "一般", "Normal"),
+    ],
     weight: 1,
-    references: [officialSources.porygon],
-  },
-  {
-    id: "pk-staryu-ability",
-    prompt: "Which ability is listed for Staryu on Pokemon.com?",
-    correctAnswer: "Illuminate",
-    wrongAnswers: ["Overgrow", "Flash Fire"],
-    weight: 1,
-    references: [officialSources.staryu],
-  },
-  {
-    id: "pk-staryu-weakness",
-    prompt: "Which of these is listed as a Staryu weakness on the official Pokedex?",
-    correctAnswer: "Electric",
-    wrongAnswers: ["Poison", "Bug"],
-    weight: 1,
-    references: [officialSources.staryu],
-  },
-  {
-    id: "pk-thunderbolt-category",
-    prompt: "In Bulbapedia's move taxonomy, what category is Thunderbolt?",
-    correctAnswer: "Special",
-    wrongAnswers: ["Physical", "Status"],
-    weight: 0.95,
     references: [bulbapediaSources.thunderbolt],
   },
   {
-    id: "pk-flamethrower-category",
-    prompt: "In Bulbapedia's move taxonomy, what category is Flamethrower?",
-    correctAnswer: "Special",
-    wrongAnswers: ["Physical", "Status"],
-    weight: 0.95,
+    id: "pk-thunderbolt-category",
+    prompt: text(
+      "What move category does Thunderbolt belong to?",
+      "十万伏特属于哪种招式分类？",
+      "Zu welcher Angriffskategorie gehoert Donnerblitz?",
+    ),
+    correctAnswer: text("Special", "特殊", "Spezial"),
+    wrongAnswers: [
+      text("Physical", "物理", "Physisch"),
+      text("Status", "变化", "Status"),
+    ],
+    weight: 1,
+    references: [bulbapediaSources.thunderbolt],
+  },
+  {
+    id: "pk-flamethrower-type",
+    prompt: text(
+      "What type of move is Flamethrower?",
+      "喷射火焰是什么属性的招式？",
+      "Welchen Typ hat die Attacke Flammenwurf?",
+    ),
+    correctAnswer: text("Fire", "火", "Feuer"),
+    wrongAnswers: [
+      text("Dragon", "龙", "Drache"),
+      text("Electric", "电", "Elektro"),
+    ],
+    weight: 1,
     references: [bulbapediaSources.flamethrower],
   },
   {
-    id: "pk-quick-attack-category",
-    prompt: "In Bulbapedia's move taxonomy, what category is Quick Attack?",
-    correctAnswer: "Physical",
-    wrongAnswers: ["Special", "Status"],
+    id: "pk-flamethrower-category",
+    prompt: text(
+      "What move category does Flamethrower belong to?",
+      "喷射火焰属于哪种招式分类？",
+      "Zu welcher Angriffskategorie gehoert Flammenwurf?",
+    ),
+    correctAnswer: text("Special", "特殊", "Spezial"),
+    wrongAnswers: [
+      text("Physical", "物理", "Physisch"),
+      text("Status", "变化", "Status"),
+    ],
+    weight: 1,
+    references: [bulbapediaSources.flamethrower],
+  },
+  {
+    id: "pk-quick-attack-type",
+    prompt: text(
+      "What type of move is Quick Attack?",
+      "电光一闪是什么属性的招式？",
+      "Welchen Typ hat die Attacke Ruckzuckhieb?",
+    ),
+    correctAnswer: text("Normal", "一般", "Normal"),
+    wrongAnswers: [
+      text("Flying", "飞行", "Flug"),
+      text("Electric", "电", "Elektro"),
+    ],
     weight: 0.95,
     references: [bulbapediaSources.quickAttack],
   },
   {
-    id: "pk-growl-category",
-    prompt: "In Bulbapedia's move taxonomy, what category is Growl?",
-    correctAnswer: "Status",
-    wrongAnswers: ["Special", "Physical"],
+    id: "pk-quick-attack-category",
+    prompt: text(
+      "What move category does Quick Attack belong to?",
+      "电光一闪属于哪种招式分类？",
+      "Zu welcher Angriffskategorie gehoert Ruckzuckhieb?",
+    ),
+    correctAnswer: text("Physical", "物理", "Physisch"),
+    wrongAnswers: [
+      text("Special", "特殊", "Spezial"),
+      text("Status", "变化", "Status"),
+    ],
     weight: 0.95,
+    references: [bulbapediaSources.quickAttack],
+  },
+  {
+    id: "pk-growl-type",
+    prompt: text(
+      "What type of move is Growl?",
+      "叫声是什么属性的招式？",
+      "Welchen Typ hat die Attacke Heuler?",
+    ),
+    correctAnswer: text("Normal", "一般", "Normal"),
+    wrongAnswers: [
+      text("Dark", "恶", "Unlicht"),
+      text("Psychic", "超能力", "Psycho"),
+    ],
+    weight: 0.9,
+    references: [bulbapediaSources.growl],
+  },
+  {
+    id: "pk-growl-category",
+    prompt: text(
+      "What move category does Growl belong to?",
+      "叫声属于哪种招式分类？",
+      "Zu welcher Angriffskategorie gehoert Heuler?",
+    ),
+    correctAnswer: text("Status", "变化", "Status"),
+    wrongAnswers: [
+      text("Physical", "物理", "Physisch"),
+      text("Special", "特殊", "Spezial"),
+    ],
+    weight: 0.9,
     references: [bulbapediaSources.growl],
   },
 ];
 
+export function getPokemonQuizEntries(
+  language: SupportedLanguage = getCurrentLanguage(),
+): readonly PokemonQuizEntry[] {
+  return localizedPokemonQuizEntries.map((entry) => ({
+    id: entry.id,
+    prompt: entry.prompt[language],
+    correctAnswer: entry.correctAnswer[language],
+    wrongAnswers: [
+      entry.wrongAnswers[0][language],
+      entry.wrongAnswers[1][language],
+    ],
+    weight: entry.weight,
+    references: entry.references,
+  }));
+}
+
+export const pokemonQuizEntries: readonly PokemonQuizEntry[] = getPokemonQuizEntries("en");

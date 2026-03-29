@@ -59,15 +59,17 @@ describe("battle quiz questions", () => {
         enemyLevel: 4,
         enemyPartySize: 2,
         enemyPartyIndex: 0,
-        excludeIds: ["player-move", "enemy-move", "enemy-name"],
+        excludeIds: ["pk-bulbasaur-type", "pk-charmander-type", "pk-squirtle-type"],
       },
       () => 0,
     );
 
-    expect(["player-move", "enemy-move", "enemy-name"]).not.toContain(question.id);
+    expect(["pk-bulbasaur-type", "pk-charmander-type", "pk-squirtle-type"]).not.toContain(
+      question.id,
+    );
   });
 
-  it("builds a richer question pool with battle-context prompts", () => {
+  it("builds a Pokemon-only knowledge pool for battle quizzes", () => {
     const trainerQuestions = buildBattleQuizQuestions({
       battleSource: "trainer",
       playerMoveName: "Vine Snap",
@@ -81,11 +83,12 @@ describe("battle quiz questions", () => {
 
     const ids = trainerQuestions.map((question) => question.id);
 
-    expect(ids).toContain("foe-remaining");
-    expect(ids).toContain("quiz-reward");
-    expect(ids).toContain("timeout-risk");
-    expect(ids).toContain("trainer-pressure");
-    expect(trainerQuestions.length).toBeGreaterThanOrEqual(14);
+    expect(ids.every((id) => id.startsWith("pk-"))).toBe(true);
+    expect(ids).toContain("pk-bulbasaur-type");
+    expect(ids).toContain("pk-squirtle-evolution");
+    expect(ids).toContain("pk-thunderbolt-type");
+    expect(ids).toContain("pk-growl-category");
+    expect(trainerQuestions.length).toBeGreaterThanOrEqual(20);
   });
 
   it("grades fast correct answers higher than slow ones and resets streak on failures", () => {

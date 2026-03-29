@@ -1,9 +1,14 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { pokemonQuizEntries } from "../src/data/pokemonQuiz";
+import { getPokemonQuizEntries, pokemonQuizEntries } from "../src/data/pokemonQuiz";
 import { buildBattleQuizQuestions } from "../src/data/quiz";
 
 describe("pokemon knowledge quiz pool", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.unstubAllGlobals();
+  });
+
   it("keeps every entry answerable with one correct answer and two wrong answers", () => {
     for (const entry of pokemonQuizEntries) {
       expect(entry.prompt.length).toBeGreaterThan(10);
@@ -14,14 +19,14 @@ describe("pokemon knowledge quiz pool", () => {
     }
   });
 
-  it("uses official sources for species facts and Bulbapedia only for move taxonomy", () => {
+  it("uses official sources for species facts and Bulbapedia only for move facts", () => {
     for (const entry of pokemonQuizEntries) {
       expect(entry.references.length).toBeGreaterThan(0);
 
       const officialRefs = entry.references.filter((reference) => reference.kind === "official");
       const bulbapediaRefs = entry.references.filter((reference) => reference.kind === "bulbapedia");
 
-      if (entry.id.includes("-category")) {
+      if (entry.id.includes("thunderbolt") || entry.id.includes("flamethrower") || entry.id.includes("quick-attack") || entry.id.includes("growl")) {
         expect(officialRefs).toHaveLength(0);
         expect(bulbapediaRefs.length).toBeGreaterThan(0);
       } else {
@@ -48,5 +53,21 @@ describe("pokemon knowledge quiz pool", () => {
     expect(pokemonIds.length).toBeGreaterThanOrEqual(10);
     expect(pokemonIds).toContain("pk-bulbasaur-type");
     expect(pokemonIds).toContain("pk-thunderbolt-category");
+  });
+
+  it("can localize the Pokemon quiz pool into Chinese and German", () => {
+    const zhEntries = getPokemonQuizEntries("zh");
+    const deEntries = getPokemonQuizEntries("de");
+
+    expect(zhEntries.find((entry) => entry.id === "pk-bulbasaur-type")?.prompt).toContain("属性");
+    expect(deEntries.find((entry) => entry.id === "pk-charmander-type")?.prompt).toContain(
+      "Welchen Typ",
+    );
+    expect(zhEntries.find((entry) => entry.id === "pk-thunderbolt-category")?.correctAnswer).toBe(
+      "特殊",
+    );
+    expect(deEntries.find((entry) => entry.id === "pk-growl-category")?.correctAnswer).toBe(
+      "Status",
+    );
   });
 });
