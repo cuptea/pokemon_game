@@ -2,6 +2,11 @@ import Phaser from "phaser";
 import { getBattleCreatureArt } from "../data/battleCreatureArt";
 import { pickBattleQuizQuestion, type BattleQuizQuestion } from "../data/quiz";
 import { registry } from "../data/registry";
+import {
+  evaluateQuizAnswer,
+  getQuizTimeLimitMs,
+  getQuizWarningTimeMs,
+} from "../game/quizBattle";
 import { createUiPanel } from "../game/uiSkin";
 import { DIFFICULTY_RULES, GAME_FONT, THEME } from "../game/theme";
 import { worldState } from "../game/worldState";
@@ -63,8 +68,13 @@ export class BattleScene extends Phaser.Scene {
   private encounteredCreatureId?: string;
   private currentQuiz: BattleQuizQuestion | null = null;
   private quizTimerFill!: Phaser.GameObjects.Rectangle;
+  private quizTimerText!: Phaser.GameObjects.Text;
   private quizTimerEvent?: Phaser.Time.TimerEvent;
+  private quizTickerEvent?: Phaser.Time.TimerEvent;
   private askedQuizIds = new Set<string>();
+  private quizStartedAt = 0;
+  private quizTimeLimitMs = 0;
+  private quizStreak = 0;
 
   constructor() {
     super("BattleScene");
@@ -78,6 +88,9 @@ export class BattleScene extends Phaser.Scene {
     this.actionLocked = true;
     this.currentQuiz = null;
     this.askedQuizIds.clear();
+    this.quizStreak = 0;
+    this.quizStartedAt = 0;
+    this.quizTimeLimitMs = 0;
 
     if (data.wildEncounter) {
       this.battleSource = "wild";
@@ -233,6 +246,12 @@ export class BattleScene extends Phaser.Scene {
         fontStyle: "bold",
       })
       .setVisible(true);
+    this.quizTimerText = this.add.text(780, 408, "", {
+      fontFamily: GAME_FONT,
+      fontSize: "14px",
+      color: "#ffe8a3",
+      fontStyle: "bold",
+    });
 
     createUiPanel({
       scene: this,
@@ -335,6 +354,56 @@ export class BattleScene extends Phaser.Scene {
     return button;
   }
 
+  private styleQuizButton(
+    button: Phaser.GameObjects.Text,
+    state: "idle" | "correct" | "wrong" | "warning",
+  ): void {
+    if (state === "correct") {
+      button.setStyle({ color: "#b7efc5" });
+      button.setScale(1.05);
+      return;
+    }
+    if (state === "wrong") {
+      button.setStyle({ color: "#ff9b9b" });
+      button.setScale(1.02);
+      return;
+    }
+    if (state === "warning") {
+      button.setStyle({ color: "#ffe8a3" });
+      button.setScale(1.04);
+      return;
+    }
+    button.setStyle({ color: THEME.text });
+    button.setScale(1);
+  }
+
+  private revealQuizAnswer(selectedIndex: number | undefined, correctChoiceId: string | undefined): void {
+    for (let index = 0; index < this.quizButtons.length; index += 1) {
+      const button = this.quizButtons[index];
+      const choice = this.currentQuiz?.choices[index];
+
+      if (choice?.id === correctChoiceId) {
+        this.styleQuizButton(button, "correct");
+      } else if (selectedIndex !== undefined && index === selectedIndex) {
+        this.styleQuizButton(button, "wrong");
+      } else {
+        this.styleQuizButton(button, "idle");
+      }
+    }
+  }
+
+  private updateQuizTimerText(): void {
+    if (!this.currentQuiz || this.quizTimeLimitMs <= 0 || this.quizStartedAt <= 0) {
+      this.quizTimerText.setText("");
+      return;
+    }
+
+    const remainingMs = Math.max(0, this.quizTimeLimitMs - (this.time.now - this.quizStartedAt));
+    const warningMs = getQuizWarningTimeMs(this.quizTimeLimitMs);
+    this.quizTimerText.setText(`${(remainingMs / 1000).toFixed(1)}s`);
+    this.quizTimerText.setColor(remainingMs <= warningMs ? "#ff9b9b" : "#ffe8a3");
+  }
+
   private setActionButtonsEnabled(enabled: boolean): void {
     this.actionLocked = !enabled;
     this.attackButton.setAlpha(enabled ? 1 : 0.6);
@@ -351,15 +420,21 @@ export class BattleScene extends Phaser.Scene {
       button.setAlpha(visible ? 1 : 0);
     }
     this.quizTimerFill.setVisible(visible);
+    this.quizTimerText.setVisible(visible);
   }
 
   private clearQuizState(): void {
     this.currentQuiz = null;
     this.quizTimerEvent?.remove(false);
     this.quizTimerEvent = undefined;
+    this.quizTickerEvent?.remove(false);
+    this.quizTickerEvent = undefined;
     this.tweens.killTweensOf(this.quizTimerFill);
     this.setQuizButtonsVisible(false);
     this.quizTimerFill.displayWidth = 250;
+    this.quizTimerText.setText("");
+    this.quizStartedAt = 0;
+    this.quizTimeLimitMs = 0;
   }
 
   private handleShutdown(): void {
@@ -387,25 +462,36 @@ export class BattleScene extends Phaser.Scene {
       excludeIds: [...this.askedQuizIds],
     });
     this.askedQuizIds.add(this.currentQuiz.id);
-    this.setBanner("Quiz Attack", THEME.accentAlt);
+    this.setBanner(
+      this.quizStreak > 1 ? `Quiz Attack x${this.quizStreak}` : "Quiz Attack",
+      THEME.accentAlt,
+    );
     this.infoText.setText(
-      `${this.currentQuiz.prompt}\nPress 1, 2, or 3, or click an answer before time runs out.`,
+      `${this.currentQuiz.prompt}\nPress 1, 2, or 3, or click an answer before time runs out.${this.quizStreak > 0 ? ` Streak: ${this.quizStreak}.` : ""}`,
     );
     this.currentQuiz.choices.forEach((choice, index) => {
       this.quizButtons[index].setText(`${index + 1}. ${choice.label}`);
+      this.styleQuizButton(this.quizButtons[index], "idle");
     });
     this.setQuizButtonsVisible(true);
-    const quizTimeMs = this.battleSource === "trainer" ? 4800 : 6200;
+    this.quizTimeLimitMs = getQuizTimeLimitMs(this.battleSource, this.enemyIndex);
+    this.quizStartedAt = this.time.now;
     this.quizTimerFill.setFillStyle(
       this.battleSource === "trainer" ? THEME.accent : THEME.accentAlt,
     );
     this.tweens.add({
       targets: this.quizTimerFill,
       displayWidth: 0,
-      duration: quizTimeMs,
+      duration: this.quizTimeLimitMs,
       ease: "Linear",
     });
-    this.quizTimerEvent = this.time.delayedCall(quizTimeMs, () => this.handleQuizTimeout());
+    this.updateQuizTimerText();
+    this.quizTickerEvent = this.time.addEvent({
+      delay: 90,
+      loop: true,
+      callback: () => this.updateQuizTimerText(),
+    });
+    this.quizTimerEvent = this.time.delayedCall(this.quizTimeLimitMs, () => this.handleQuizTimeout());
     this.actionLocked = false;
   }
 
@@ -417,35 +503,53 @@ export class BattleScene extends Phaser.Scene {
     this.actionLocked = true;
     const choice = this.currentQuiz.choices[index];
     const correct = choice?.isCorrect ?? false;
-    this.clearQuizState();
+    const correctChoice = this.currentQuiz.choices.find((quizChoice) => quizChoice.isCorrect);
+    const evaluation = evaluateQuizAnswer({
+      battleSource: this.battleSource,
+      correct,
+      elapsedMs: Math.max(0, this.time.now - this.quizStartedAt),
+      timeLimitMs: this.quizTimeLimitMs,
+      streak: this.quizStreak,
+      enemyPartyIndex: this.enemyIndex,
+    });
+    this.quizStreak = evaluation.nextStreak;
+    this.revealQuizAnswer(index, correctChoice?.id);
 
     if (!correct) {
-      this.setBanner("Missed Answer", THEME.danger);
+      this.setBanner(evaluation.banner, THEME.danger);
       this.infoText.setText(
-        `Wrong answer. ${this.currentEnemy.name} takes the opening and strikes first.`,
+        `${choice?.label ?? "That answer"} was wrong. Correct answer: ${correctChoice?.label ?? "unknown"}. ${this.currentEnemy.name} takes the opening and strikes first.`,
       );
-      this.time.delayedCall(380, () => this.resolveEnemyTurn(0, true));
+      this.time.delayedCall(evaluation.revealDelayMs, () => {
+        this.clearQuizState();
+        this.resolveEnemyTurn(0, evaluation.enemyPunishBonus, "missed quiz");
+      });
       return;
     }
 
-    this.setBanner("Correct Answer", THEME.success);
+    this.setBanner(evaluation.banner, THEME.success);
     const baseDamage = this.calculateDamage(this.player, this.currentEnemy);
-    const bonusDamage = Math.max(2, Math.round(this.player.movePower * 0.35));
-    const playerDamage = baseDamage + bonusDamage;
-    this.currentEnemy.hp = Math.max(0, this.currentEnemy.hp - playerDamage);
-    this.infoText.setText(
-      `${this.player.name} answered correctly and used ${this.player.moveName} for ${playerDamage} damage.`,
+    const playerDamage = Math.max(
+      2,
+      Math.round(baseDamage * evaluation.damageMultiplier) + evaluation.flatDamageBonus,
     );
-    this.animateImpact(this.enemySprite, playerDamage, THEME.accent, () => {
-      this.tweenHpBar(this.enemyBar, this.currentEnemy.hp / this.currentEnemy.maxHp);
-      this.refreshHud();
+    this.infoText.setText(
+      `${correctChoice?.label ?? "That answer"} was right. ${this.player.name} turns it into ${playerDamage} damage with ${this.player.moveName}.${this.quizStreak > 1 ? ` Streak ${this.quizStreak} is live.` : ""}`,
+    );
+    this.time.delayedCall(evaluation.revealDelayMs, () => {
+      this.clearQuizState();
+      this.currentEnemy.hp = Math.max(0, this.currentEnemy.hp - playerDamage);
+      this.animateImpact(this.enemySprite, playerDamage, THEME.accent, () => {
+        this.tweenHpBar(this.enemyBar, this.currentEnemy.hp / this.currentEnemy.maxHp);
+        this.refreshHud();
 
-      if (this.currentEnemy.hp === 0) {
-        this.handleEnemyFaint();
-        return;
-      }
+        if (this.currentEnemy.hp === 0) {
+          this.handleEnemyFaint();
+          return;
+        }
 
-      this.time.delayedCall(420, () => this.resolveEnemyTurn(playerDamage, false));
+        this.time.delayedCall(420, () => this.resolveEnemyTurn(playerDamage, 0));
+      });
     });
   }
 
@@ -455,20 +559,38 @@ export class BattleScene extends Phaser.Scene {
     }
 
     this.actionLocked = true;
-    this.clearQuizState();
-    this.setBanner("Too Slow", THEME.accent);
+    const correctChoice = this.currentQuiz.choices.find((quizChoice) => quizChoice.isCorrect);
+    const evaluation = evaluateQuizAnswer({
+      battleSource: this.battleSource,
+      correct: false,
+      timedOut: true,
+      elapsedMs: this.quizTimeLimitMs,
+      timeLimitMs: this.quizTimeLimitMs,
+      streak: this.quizStreak,
+      enemyPartyIndex: this.enemyIndex,
+    });
+    this.quizStreak = evaluation.nextStreak;
+    this.revealQuizAnswer(undefined, correctChoice?.id);
+    this.setBanner(evaluation.banner, THEME.accent);
     this.infoText.setText(
-      `${this.player.name} missed the opening. ${this.currentEnemy.name} counters immediately.`,
+      `${this.player.name} missed the opening. Correct answer: ${correctChoice?.label ?? "unknown"}. ${this.currentEnemy.name} counters immediately.`,
     );
-    this.time.delayedCall(300, () => this.resolveEnemyTurn(0, true));
+    this.time.delayedCall(evaluation.revealDelayMs, () => {
+      this.clearQuizState();
+      this.resolveEnemyTurn(0, evaluation.enemyPunishBonus, "timeout");
+    });
   }
 
-  private resolveEnemyTurn(playerDamage: number, punished = false): void {
-    const enemyDamage = this.calculateDamage(this.currentEnemy, this.player) + (punished ? 2 : 0);
+  private resolveEnemyTurn(
+    playerDamage: number,
+    enemyPunishBonus = 0,
+    punishLabel?: string,
+  ): void {
+    const enemyDamage = this.calculateDamage(this.currentEnemy, this.player) + enemyPunishBonus;
     this.player.hp = Math.max(0, this.player.hp - enemyDamage);
     this.infoText.setText(
-      punished
-        ? `${this.currentEnemy.name} punishes the missed quiz with ${this.currentEnemy.moveName} for ${enemyDamage} damage.`
+      enemyPunishBonus > 0
+        ? `${this.currentEnemy.name} punishes the ${punishLabel ?? "miss"} with ${this.currentEnemy.moveName} for ${enemyDamage} damage.`
         : `${this.player.name} dealt ${playerDamage}. ${this.currentEnemy.name} answered with ${this.currentEnemy.moveName}.`,
     );
 
