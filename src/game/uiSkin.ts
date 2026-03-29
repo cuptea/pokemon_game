@@ -66,6 +66,10 @@ export function createUiPanel({
     .setOrigin(0.5)
     .setStrokeStyle(2, strokeColor, 0.96 * alpha);
 
+  tile.setScrollFactor(scrollFactor);
+  overlay.setScrollFactor(scrollFactor);
+  gloss.setScrollFactor(scrollFactor);
+  border.setScrollFactor(scrollFactor);
   panel.add([tile, overlay, gloss, border]);
   panel.setScrollFactor(scrollFactor);
   if (depth !== undefined) {

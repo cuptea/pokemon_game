@@ -98,6 +98,8 @@ export class BattleScene extends Phaser.Scene {
 
   create(): void {
     this.cameras.main.fadeIn(120, 7, 19, 31);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleShutdown, this);
+    this.events.once(Phaser.Scenes.Events.DESTROY, this.handleShutdown, this);
 
     this.add.image(480, 320, "battle_bg");
     this.add
@@ -358,6 +360,11 @@ export class BattleScene extends Phaser.Scene {
     this.tweens.killTweensOf(this.quizTimerFill);
     this.setQuizButtonsVisible(false);
     this.quizTimerFill.displayWidth = 250;
+  }
+
+  private handleShutdown(): void {
+    this.clearQuizState();
+    this.input.keyboard?.removeAllKeys(true);
   }
 
   private beginQuizTurn(): void {
