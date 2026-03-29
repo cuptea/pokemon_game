@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { registry } from "../data/registry";
 import { getStoryProfile } from "../data/stories";
+import { createUiPanel } from "../game/uiSkin";
 import { resetWorldState, saveWorldState, worldState } from "../game/worldState";
 import { DIFFICULTY_RULES, GAME_FONT, PLAYER_AVATARS, THEME } from "../game/theme";
 import type {
@@ -211,12 +212,18 @@ export class OverworldScene extends Phaser.Scene {
     strokeColor: number,
     alpha: number,
   ): void {
-    this.add
-      .rectangle(x + width / 2, y + height / 2, width, height, fillColor, alpha)
-      .setOrigin(0.5)
-      .setStrokeStyle(2, strokeColor)
-      .setScrollFactor(0)
-      .setDepth(25);
+    createUiPanel({
+      scene: this,
+      x,
+      y,
+      width,
+      height,
+      variant: fillColor === THEME.promptFill ? "cool" : "warm",
+      alpha,
+      depth: 25,
+      scrollFactor: 0,
+      strokeColor,
+    });
   }
 
   private renderMap(): void {
@@ -671,9 +678,15 @@ export class OverworldScene extends Phaser.Scene {
     const panelHeight = 320;
     const panel = this.add.container(width / 2, height / 2).setScrollFactor(0).setDepth(40);
 
-    const backdrop = this.add
-      .rectangle(0, 0, panelWidth, panelHeight, THEME.battleFill, 0.96)
-      .setStrokeStyle(3, THEME.panelStroke);
+    const backdrop = createUiPanel({
+      scene: this,
+      x: -panelWidth / 2,
+      y: -panelHeight / 2,
+      width: panelWidth,
+      height: panelHeight,
+      variant: "warm",
+      alpha: 1,
+    });
     const title = this.add.text(-panelWidth / 2 + 24, -panelHeight / 2 + 20, "Field Guide", {
       fontFamily: GAME_FONT,
       fontSize: "28px",

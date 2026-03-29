@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { getStoryProfile } from "../data/stories";
 import { saveWorldState, worldState } from "../game/worldState";
 import { DIFFICULTY_RULES, GAME_FONT, PLAYER_AVATARS } from "../game/theme";
+import { createUiPanel } from "../game/uiSkin";
 import type { GameDifficulty, PlayerAvatar } from "../types/world";
 
 const AVATAR_ORDER: PlayerAvatar[] = ["blaze", "mist", "grove"];
@@ -90,7 +91,17 @@ export class StartScene extends Phaser.Scene {
       const info = PLAYER_AVATARS[avatar];
       const story = getStoryProfile(avatar);
       const panel = this.add.container(200 + index * 220, 330);
-      const card = this.add.rectangle(0, 0, 180, 180, 0x1c2541, 0.96).setStrokeStyle(4, 0x5bc0be);
+      const card = createUiPanel({
+        scene: this,
+        x: 0,
+        y: 0,
+        width: 180,
+        height: 180,
+        variant: "cool",
+        alpha: 1,
+        depth: 0,
+      });
+      card.setPosition(0, 0);
       const portrait = this.add.image(0, -6, info.textureKey).setScale(2.8);
       const label = this.add.text(0, 64, info.label, {
         fontFamily: GAME_FONT,
@@ -231,12 +242,8 @@ export class StartScene extends Phaser.Scene {
 
   private refreshSelectionUi(): void {
     this.avatarCards.forEach((card, index) => {
-      const background = card.list[0] as Phaser.GameObjects.Rectangle;
-      background.setStrokeStyle(
-        4,
-        index === this.avatarIndex ? 0xffd166 : 0x5bc0be,
-      );
       card.setScale(index === this.avatarIndex ? 1.06 : 1);
+      card.setAlpha(index === this.avatarIndex ? 1 : 0.9);
     });
 
     this.difficultyButtons.forEach((button, index) => {

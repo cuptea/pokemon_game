@@ -1,6 +1,8 @@
 import Phaser from "phaser";
+import { getBattleCreatureArt } from "../data/battleCreatureArt";
 import { pickBattleQuizQuestion, type BattleQuizQuestion } from "../data/quiz";
 import { registry } from "../data/registry";
+import { createUiPanel } from "../game/uiSkin";
 import { DIFFICULTY_RULES, GAME_FONT, THEME } from "../game/theme";
 import { worldState } from "../game/worldState";
 import type {
@@ -49,6 +51,10 @@ export class BattleScene extends Phaser.Scene {
   private enemyBar!: Phaser.GameObjects.Rectangle;
   private playerSprite!: Phaser.GameObjects.Image;
   private enemySprite!: Phaser.GameObjects.Image;
+  private playerSpriteBaseScale = 1.02;
+  private enemySpriteBaseScale = 0.92;
+  private playerSpriteHome = new Phaser.Math.Vector2(220, 374);
+  private enemySpriteHome = new Phaser.Math.Vector2(720, 206);
   private resolved = false;
   private actionLocked = true;
   private battleSource: "trainer" | "wild" = "trainer";
@@ -92,8 +98,6 @@ export class BattleScene extends Phaser.Scene {
 
   create(): void {
     this.cameras.main.fadeIn(120, 7, 19, 31);
-    this.ensureCreatureTexture(this.player);
-    this.ensureCreatureTexture(this.currentEnemy);
 
     this.add.image(480, 320, "battle_bg");
     this.add
@@ -118,27 +122,50 @@ export class BattleScene extends Phaser.Scene {
       .rectangle(232, 414, 300, 2, 0xffffff, 0.1)
       .setAngle(4);
 
-    this.add.text(34, 24, this.battleSource === "wild" ? "Wild Encounter" : "Battle Test", {
+    this.add.text(34, 24, this.battleSource === "wild" ? "Wild Encounter" : "Trainer Battle", {
       fontFamily: GAME_FONT,
       fontSize: "34px",
       color: THEME.text,
       fontStyle: "bold",
     });
 
-    this.add
-      .rectangle(690, 160, 250, 104, THEME.promptFill, 0.84)
-      .setStrokeStyle(3, THEME.panelStroke);
-    this.add
-      .rectangle(220, 420, 286, 128, THEME.promptFill, 0.84)
-      .setStrokeStyle(3, THEME.panelStroke);
+    createUiPanel({
+      scene: this,
+      x: 554,
+      y: 108,
+      width: 272,
+      height: 112,
+      variant: "cool",
+    });
+    createUiPanel({
+      scene: this,
+      x: 34,
+      y: 368,
+      width: 308,
+      height: 148,
+      variant: "cool",
+    });
+    createUiPanel({
+      scene: this,
+      x: 518,
+      y: 440,
+      width: 300,
+      height: 140,
+      variant: "cool",
+    });
 
-    this.enemySprite = this.add
-      .image(720, 206, this.getCreatureTextureKey(this.currentEnemy))
-      .setScale(0.92)
-      .setFlipX(true);
-    this.playerSprite = this.add
-      .image(220, 374, this.getCreatureTextureKey(this.player))
-      .setScale(1.02);
+    this.enemySprite = this.add.image(
+      this.enemySpriteHome.x,
+      this.enemySpriteHome.y,
+      this.getCreatureTextureKey(this.currentEnemy, "enemy"),
+    );
+    this.playerSprite = this.add.image(
+      this.playerSpriteHome.x,
+      this.playerSpriteHome.y,
+      this.getCreatureTextureKey(this.player, "player"),
+    );
+    this.applyCreatureVisual(this.enemySprite, this.currentEnemy, "enemy");
+    this.applyCreatureVisual(this.playerSprite, this.player, "player");
 
     this.add
       .text(720, 296, "FOE", {
@@ -167,6 +194,7 @@ export class BattleScene extends Phaser.Scene {
       color: THEME.textDark,
       backgroundColor: "#f6bd60",
       padding: { x: 12, y: 8 },
+      fontStyle: "bold",
     });
 
     this.enemyHpText = this.add.text(566, 86, "", {
@@ -204,9 +232,14 @@ export class BattleScene extends Phaser.Scene {
       })
       .setVisible(true);
 
-    this.add
-      .rectangle(480, 582, 896, 92, THEME.panelFill, 0.95)
-      .setStrokeStyle(3, THEME.panelStroke);
+    createUiPanel({
+      scene: this,
+      x: 32,
+      y: 534,
+      width: 896,
+      height: 96,
+      variant: "warm",
+    });
     this.infoText = this.add.text(40, 546, "", {
       fontFamily: GAME_FONT,
       fontSize: "21px",
@@ -267,15 +300,15 @@ export class BattleScene extends Phaser.Scene {
       .text(x, y, label, {
         fontFamily: GAME_FONT,
         fontSize: "22px",
-        color: THEME.textDark,
-        backgroundColor: "#f6bd60",
+        color: THEME.text,
         padding: { x: 16, y: 10 },
         fontStyle: "bold",
         align: "center",
         fixedWidth,
       })
       .setInteractive({ useHandCursor: true });
-    button.setStroke("#fff3bf", 2);
+    button.setStroke("#08131f", 4);
+    button.setShadow(0, 2, "#08131f", 0, false, true);
 
     button.on("pointerdown", () => {
       if (this.actionLocked) {
@@ -289,12 +322,12 @@ export class BattleScene extends Phaser.Scene {
     });
     button.on("pointerover", () => {
       if (!this.actionLocked) {
-        button.setStyle({ backgroundColor: "#ffd88b", color: "#08131f" });
+        button.setStyle({ color: "#ffe8a3" });
         button.setScale(1.03);
       }
     });
     button.on("pointerout", () => {
-      button.setStyle({ backgroundColor: "#f6bd60", color: THEME.textDark });
+      button.setStyle({ color: THEME.text });
       button.setScale(1);
     });
     return button;
@@ -581,9 +614,8 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private refreshEnemySprite(): void {
-    this.ensureCreatureTexture(this.currentEnemy);
-    this.enemySprite.setTexture(this.getCreatureTextureKey(this.currentEnemy));
-    this.enemySprite.setFlipX(true);
+    this.applyCreatureVisual(this.enemySprite, this.currentEnemy, "enemy");
+    this.refreshIdleTween(this.enemySprite, this.enemySpriteBaseScale, 1.8, 620);
   }
 
   private finishBattle(outcome: BattleResult["outcome"]): void {
@@ -658,36 +690,17 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private startCreatureIdleAnimations(): void {
-    this.tweens.add({
-      targets: this.playerSprite,
-      scaleX: 1.05,
-      scaleY: 0.98,
-      angle: -1.8,
-      duration: 560,
-      yoyo: true,
-      repeat: -1,
-      ease: "Sine.easeInOut",
-    });
-
-    this.tweens.add({
-      targets: this.enemySprite,
-      scaleX: 0.96,
-      scaleY: 0.9,
-      angle: 1.8,
-      duration: 620,
-      yoyo: true,
-      repeat: -1,
-      ease: "Sine.easeInOut",
-    });
+    this.refreshIdleTween(this.playerSprite, this.playerSpriteBaseScale, -1.8, 560);
+    this.refreshIdleTween(this.enemySprite, this.enemySpriteBaseScale, 1.8, 620);
   }
 
   private playOpeningAnimation(): void {
-    this.playerSprite.setX(170);
-    this.enemySprite.setX(790);
+    this.playerSprite.setPosition(this.playerSpriteHome.x - 52, this.playerSpriteHome.y);
+    this.enemySprite.setPosition(this.enemySpriteHome.x + 70, this.enemySpriteHome.y);
 
     this.tweens.add({
       targets: this.playerSprite,
-      x: 220,
+      x: this.playerSpriteHome.x,
       duration: 360,
       ease: "Back.easeOut",
     });
@@ -696,21 +709,96 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private playEnemySendOutAnimation(): void {
-    this.enemySprite.setX(790);
+    this.enemySprite.setPosition(this.enemySpriteHome.x + 70, this.enemySpriteHome.y);
     this.tweens.add({
       targets: this.enemySprite,
-      x: 720,
+      x: this.enemySpriteHome.x,
       duration: 360,
       ease: "Back.easeOut",
     });
   }
 
-  private getCreatureTextureKey(creature: RuntimeCreature): string {
+  private refreshIdleTween(
+    target: Phaser.GameObjects.Image,
+    baseScale: number,
+    angle: number,
+    duration: number,
+  ): void {
+    this.tweens.killTweensOf(target);
+    target.setScale(baseScale);
+    target.setAngle(0);
+
+    this.tweens.add({
+      targets: target,
+      scaleX: baseScale * 1.04,
+      scaleY: baseScale * 0.98,
+      angle,
+      duration,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
+    });
+  }
+
+  private applyCreatureVisual(
+    target: Phaser.GameObjects.Image,
+    creature: RuntimeCreature,
+    side: "player" | "enemy",
+  ): void {
+    const art = getBattleCreatureArt(creature.id);
+    const textureKey = this.getCreatureTextureKey(creature, side);
+    const usingGenerated = textureKey.startsWith("battle-creature-");
+    const homeX =
+      (side === "player" ? 220 : 720) +
+      (side === "player" ? art?.playerOffsetX ?? 0 : art?.enemyOffsetX ?? 0);
+    const homeY =
+      (side === "player" ? 374 : 206) +
+      (side === "player" ? art?.playerOffsetY ?? 0 : art?.enemyOffsetY ?? 0);
+    const baseScale = usingGenerated
+      ? side === "player"
+        ? 1.02
+        : 0.92
+      : side === "player"
+        ? art?.playerScale ?? 2.45
+        : art?.enemyScale ?? 2.55;
+
+    target.setTexture(textureKey);
+    target.setPosition(homeX, homeY);
+    target.setScale(baseScale);
+    target.setFlipX(side === "enemy" && usingGenerated);
+
+    if (side === "player") {
+      this.playerSpriteBaseScale = baseScale;
+      this.playerSpriteHome.set(homeX, homeY);
+      return;
+    }
+
+    this.enemySpriteBaseScale = baseScale;
+    this.enemySpriteHome.set(homeX, homeY);
+  }
+
+  private getCreatureTextureKey(
+    creature: RuntimeCreature,
+    side: "player" | "enemy",
+  ): string {
+    const art = getBattleCreatureArt(creature.id);
+    const preferredKeys =
+      side === "player"
+        ? [art?.backKey, art?.frontKey]
+        : [art?.frontKey, art?.backKey];
+
+    for (const key of preferredKeys) {
+      if (key && this.textures.exists(key)) {
+        return key;
+      }
+    }
+
+    this.ensureCreatureTexture(creature);
     return `battle-creature-${creature.id}`;
   }
 
   private ensureCreatureTexture(creature: RuntimeCreature): void {
-    const textureKey = this.getCreatureTextureKey(creature);
+    const textureKey = `battle-creature-${creature.id}`;
     if (this.textures.exists(textureKey)) {
       return;
     }

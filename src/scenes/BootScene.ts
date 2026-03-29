@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { battleCreatureTextureEntries } from "../data/battleCreatureArt";
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -21,6 +22,12 @@ export class BootScene extends Phaser.Scene {
     this.load.image("tower", "/assets/tower.svg");
     this.load.image("house", "/assets/house.svg");
     this.load.image("dock", "/assets/dock.svg");
+    this.load.image("ui_panel_warm", "/assets/ui/ui_panel_warm.png");
+    this.load.image("ui_panel_cool", "/assets/ui/ui_panel_cool.png");
+
+    for (const texture of battleCreatureTextureEntries) {
+      this.load.image(texture.key, texture.path);
+    }
   }
 
   create(): void {
