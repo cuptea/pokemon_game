@@ -144,7 +144,7 @@ export class OverworldScene extends Phaser.Scene {
     const width = Number(this.scale.gameSize.width);
     const height = Number(this.scale.gameSize.height);
 
-    this.createPanel(width - 48, 64, 24, 18, THEME.panelFill, THEME.panelStroke, 0.92);
+    this.createPanel(width - 48, 64, 24, 18, "warm", THEME.panelStroke, 0.92);
     this.areaText = this.add
       .text(40, 28, "", {
         fontFamily: GAME_FONT,
@@ -155,7 +155,7 @@ export class OverworldScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setDepth(30);
 
-    this.createPanel(width - 48, 60, 24, 88, THEME.promptFill, THEME.panelStroke, 0.88);
+    this.createPanel(width - 48, 60, 24, 88, "cool", THEME.panelStroke, 0.88);
     this.hudText = this.add
       .text(40, 102, "Arrow keys/WASD move. E interacts. H opens help. R resets progress.", {
         fontFamily: GAME_FONT,
@@ -166,7 +166,7 @@ export class OverworldScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setDepth(30);
 
-    this.createPanel(250, 108, width - 274, 18, THEME.promptFill, THEME.panelStroke, 0.9);
+    this.createPanel(250, 108, width - 274, 18, "cool", THEME.panelStroke, 0.9);
     this.statusText = this.add
       .text(width - 258, 32, "", {
         fontFamily: GAME_FONT,
@@ -177,7 +177,7 @@ export class OverworldScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setDepth(30);
 
-    this.createPanel(width - 48, 56, 24, height - 156, THEME.promptFill, THEME.panelStroke, 0.92);
+    this.createPanel(width - 48, 56, 24, height - 156, "cool", THEME.panelStroke, 0.92);
     this.promptText = this.add
       .text(40, height - 142, "", {
         fontFamily: GAME_FONT,
@@ -189,7 +189,7 @@ export class OverworldScene extends Phaser.Scene {
       .setDepth(30)
       .setVisible(false);
 
-    this.createPanel(width - 48, 88, 24, height - 88, THEME.panelFill, THEME.panelStroke, 0.94);
+    this.createPanel(width - 48, 88, 24, height - 88, "warm", THEME.panelStroke, 0.94);
     this.messageText = this.add
       .text(40, height - 72, "", {
         fontFamily: GAME_FONT,
@@ -208,7 +208,7 @@ export class OverworldScene extends Phaser.Scene {
     height: number,
     x: number,
     y: number,
-    fillColor: number,
+    variant: "warm" | "cool",
     strokeColor: number,
     alpha: number,
   ): void {
@@ -218,7 +218,7 @@ export class OverworldScene extends Phaser.Scene {
       y,
       width,
       height,
-      variant: fillColor === THEME.promptFill ? "cool" : "warm",
+      variant,
       alpha,
       depth: 25,
       scrollFactor: 0,
