@@ -35,6 +35,7 @@ export class OverworldScene extends Phaser.Scene {
     right: Phaser.Input.Keyboard.Key;
     interact: Phaser.Input.Keyboard.Key;
     help: Phaser.Input.Keyboard.Key;
+    party: Phaser.Input.Keyboard.Key;
     reset: Phaser.Input.Keyboard.Key;
   };
   private player!: Phaser.Physics.Arcade.Sprite;
@@ -75,6 +76,11 @@ export class OverworldScene extends Phaser.Scene {
       this.toggleHelp();
     }
 
+    if (Phaser.Input.Keyboard.JustDown(this.keys.party)) {
+      this.cycleActiveCreature();
+      return;
+    }
+
     if (Phaser.Input.Keyboard.JustDown(this.keys.reset)) {
       this.resetProgress();
       return;
@@ -111,6 +117,7 @@ export class OverworldScene extends Phaser.Scene {
       right: Phaser.Input.Keyboard.KeyCodes.D,
       interact: Phaser.Input.Keyboard.KeyCodes.E,
       help: Phaser.Input.Keyboard.KeyCodes.H,
+      party: Phaser.Input.Keyboard.KeyCodes.C,
       reset: Phaser.Input.Keyboard.KeyCodes.R,
     }) as OverworldScene["keys"];
   }
@@ -157,7 +164,7 @@ export class OverworldScene extends Phaser.Scene {
 
     this.createPanel(width - 48, 60, 24, 88, "cool", THEME.panelStroke, 0.88);
     this.hudText = this.add
-      .text(40, 102, "Arrow keys/WASD move. E interacts. H opens help. R resets progress.", {
+      .text(40, 102, "Arrow keys/WASD move. E interacts. C swaps ally. H opens help. R resets progress.", {
         fontFamily: GAME_FONT,
         fontSize: "17px",
         color: THEME.textMuted,
@@ -539,7 +546,7 @@ export class OverworldScene extends Phaser.Scene {
     this.cameras.main.fadeOut(160, 8, 19, 31);
     this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
       this.scene.launch("BattleScene", {
-        playerCreatureId: "spriglet",
+        playerCreatureId: worldState.activeCreatureId,
         wildEncounter,
       });
       this.scene.pause();
@@ -628,7 +635,7 @@ export class OverworldScene extends Phaser.Scene {
     this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
       this.scene.launch("BattleScene", {
         battleId,
-        playerCreatureId: "spriglet",
+        playerCreatureId: worldState.activeCreatureId,
       });
       this.scene.pause();
     });
@@ -647,10 +654,21 @@ export class OverworldScene extends Phaser.Scene {
       }
       saveWorldState();
     } else if (result.source === "wild" && result.outcome === "win") {
-      const creatureName = result.encounteredCreatureId
-        ? registry.creatures[result.encounteredCreatureId]?.name
-        : "wild creature";
-      this.setMessage(`${creatureName} retreated. The tall grass settles down for a moment.`);
+      const capturedId = result.encounteredCreatureId;
+      const creatureName = capturedId ? registry.creatures[capturedId]?.name : "wild creature";
+      if (capturedId && registry.creatures[capturedId]) {
+        const alreadyOwned = worldState.ownedCreatureIds.includes(capturedId);
+        if (!alreadyOwned) {
+          worldState.ownedCreatureIds = [...worldState.ownedCreatureIds, capturedId];
+          worldState.activeCreatureId = capturedId;
+          this.setMessage(`${creatureName} joined your team and is now your active ally.`);
+          saveWorldState();
+        } else {
+          this.setMessage(`${creatureName} retreated. Your team already knows this route well.`);
+        }
+      } else {
+        this.setMessage(`${creatureName} retreated. The tall grass settles down for a moment.`);
+      }
     } else if (result.outcome === "lose") {
       this.setMessage("Your team needs more training. Try another route or battle again.");
     } else {
@@ -668,8 +686,10 @@ export class OverworldScene extends Phaser.Scene {
   private refreshStatus(): void {
     const defeatedCount = Object.keys(worldState.defeatedBattles).length;
     const collectedCount = Object.keys(worldState.collectedInteractives).length;
+    const activeCreatureName =
+      registry.creatures[worldState.activeCreatureId]?.name ?? worldState.activeCreatureId;
     this.statusText.setText(
-      `Hero: ${PLAYER_AVATARS[worldState.selectedAvatar].label}\nStory: ${this.activeStory.storyTitle}\nVictories: ${defeatedCount}\nDiscoveries: ${collectedCount}`,
+      `Hero: ${PLAYER_AVATARS[worldState.selectedAvatar].label}\nAlly: ${activeCreatureName}\nTeam: ${worldState.ownedCreatureIds.length}\nVictories: ${defeatedCount}\nDiscoveries: ${collectedCount}`,
     );
   }
 
@@ -699,10 +719,13 @@ export class OverworldScene extends Phaser.Scene {
       [
         "Move: Arrow keys or WASD",
         "Interact: E",
+        "Swap ally: C",
         "Help: H",
         "Reset progress: R",
         "",
         `Hero: ${PLAYER_AVATARS[worldState.selectedAvatar].label}`,
+        `Active ally: ${registry.creatures[worldState.activeCreatureId]?.name ?? worldState.activeCreatureId}`,
+        `Owned allies: ${worldState.ownedCreatureIds.length}`,
         `Story: ${this.activeStory.storyTitle}`,
         `Difficulty: ${DIFFICULTY_RULES[worldState.selectedDifficulty].label}`,
         "",
@@ -752,6 +775,23 @@ export class OverworldScene extends Phaser.Scene {
     this.interactionLockedUntil = this.time.now + 180;
     this.loadCurrentMap();
     this.setMessage("Progress reset. Mossgrove Town is fresh again.");
+  }
+
+  private cycleActiveCreature(): void {
+    if (this.transitionLocked || this.helpVisible || worldState.ownedCreatureIds.length <= 1) {
+      if (worldState.ownedCreatureIds.length <= 1) {
+        this.setMessage("You only have one ally right now. Win a wild battle to recruit more.");
+      }
+      return;
+    }
+
+    const currentIndex = Math.max(0, worldState.ownedCreatureIds.indexOf(worldState.activeCreatureId));
+    const nextIndex = (currentIndex + 1) % worldState.ownedCreatureIds.length;
+    worldState.activeCreatureId = worldState.ownedCreatureIds[nextIndex];
+    saveWorldState();
+    this.refreshStatus();
+    this.interactionLockedUntil = this.time.now + 120;
+    this.setMessage(`${registry.creatures[worldState.activeCreatureId]?.name ?? "Ally"} is now leading the team.`);
   }
 
   private rollEncounter(zone: EncounterZone) {

@@ -1,20 +1,37 @@
+import { creatures } from "../data/creatures";
 import type { GameDifficulty, PlayerAvatar, WorldState } from "../types/world";
 
 const STORAGE_KEY = "pokemon_game_world_state_v1";
 const VALID_AVATARS: PlayerAvatar[] = ["blaze", "mist", "grove"];
 const VALID_DIFFICULTIES: GameDifficulty[] = ["casual", "adventure", "heroic"];
+const STARTER_CREATURE_ID = "spriglet";
+const VALID_CREATURE_IDS = new Set(Object.keys(creatures));
 
 const initialState = (): WorldState => ({
   currentMapId: "mossgrove_town",
   currentSpawnId: "town_square",
   defeatedBattles: {},
   collectedInteractives: {},
+  ownedCreatureIds: [STARTER_CREATURE_ID],
+  activeCreatureId: STARTER_CREATURE_ID,
   selectedAvatar: "blaze",
   selectedDifficulty: "adventure",
   introCompleted: false,
 });
 
 export const worldState: WorldState = loadWorldState();
+
+function sanitizeOwnedCreatureIds(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [STARTER_CREATURE_ID];
+  }
+
+  const owned = value.filter(
+    (entry): entry is string => typeof entry === "string" && VALID_CREATURE_IDS.has(entry),
+  );
+
+  return owned.length > 0 ? [...new Set(owned)] : [STARTER_CREATURE_ID];
+}
 
 export function loadWorldState(): WorldState {
   if (typeof window === "undefined") {
@@ -28,11 +45,18 @@ export function loadWorldState(): WorldState {
     }
 
     const parsed = JSON.parse(raw) as Partial<WorldState>;
+    const ownedCreatureIds = sanitizeOwnedCreatureIds(parsed.ownedCreatureIds);
+    const activeCreatureId =
+      typeof parsed.activeCreatureId === "string" && ownedCreatureIds.includes(parsed.activeCreatureId)
+        ? parsed.activeCreatureId
+        : ownedCreatureIds[0];
     return {
       currentMapId: parsed.currentMapId ?? "mossgrove_town",
       currentSpawnId: parsed.currentSpawnId ?? "town_square",
       defeatedBattles: parsed.defeatedBattles ?? {},
       collectedInteractives: parsed.collectedInteractives ?? {},
+      ownedCreatureIds,
+      activeCreatureId,
       selectedAvatar: VALID_AVATARS.includes(parsed.selectedAvatar as PlayerAvatar)
         ? (parsed.selectedAvatar as PlayerAvatar)
         : "blaze",
@@ -62,6 +86,8 @@ export function resetWorldState(): void {
   worldState.currentSpawnId = fresh.currentSpawnId;
   worldState.defeatedBattles = fresh.defeatedBattles;
   worldState.collectedInteractives = fresh.collectedInteractives;
+  worldState.ownedCreatureIds = fresh.ownedCreatureIds;
+  worldState.activeCreatureId = fresh.activeCreatureId;
   worldState.selectedAvatar = fresh.selectedAvatar;
   worldState.selectedDifficulty = fresh.selectedDifficulty;
   worldState.introCompleted = fresh.introCompleted;

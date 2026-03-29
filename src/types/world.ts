@@ -159,6 +159,8 @@ export type WorldState = {
   currentSpawnId: string;
   defeatedBattles: Record<string, boolean>;
   collectedInteractives: Record<string, boolean>;
+  ownedCreatureIds: string[];
+  activeCreatureId: string;
   selectedAvatar: PlayerAvatar;
   selectedDifficulty: GameDifficulty;
   introCompleted: boolean;
