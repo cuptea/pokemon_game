@@ -66,8 +66,10 @@ export class OverworldScene extends Phaser.Scene {
     this.loadCurrentMap(true);
 
     this.game.events.on("battle-complete", this.handleBattleComplete, this);
+    this.game.events.on("party-updated", this.handlePartyUpdated, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.game.events.off("battle-complete", this.handleBattleComplete, this);
+      this.game.events.off("party-updated", this.handlePartyUpdated, this);
     });
   }
 
@@ -77,7 +79,7 @@ export class OverworldScene extends Phaser.Scene {
     }
 
     if (Phaser.Input.Keyboard.JustDown(this.keys.party)) {
-      this.cycleActiveCreature();
+      this.openPartyMenu();
       return;
     }
 
@@ -164,7 +166,7 @@ export class OverworldScene extends Phaser.Scene {
 
     this.createPanel(width - 48, 60, 24, 88, "cool", THEME.panelStroke, 0.88);
     this.hudText = this.add
-      .text(40, 102, "Arrow keys/WASD move. E interacts. C swaps ally. H opens help. R resets progress.", {
+      .text(40, 102, "Arrow keys/WASD move. E interacts. C opens party. H opens help. R resets progress.", {
         fontFamily: GAME_FONT,
         fontSize: "17px",
         color: THEME.textMuted,
@@ -498,7 +500,7 @@ export class OverworldScene extends Phaser.Scene {
       );
     } else {
       this.hudText.setText(
-        `Arrow keys/WASD move. E interacts. Goal: ${this.activeStory.objectiveShort}`,
+        `Arrow keys/WASD move. E interacts. C opens party. Goal: ${this.activeStory.objectiveShort}`,
       );
     }
   }
@@ -546,7 +548,7 @@ export class OverworldScene extends Phaser.Scene {
     this.cameras.main.fadeOut(160, 8, 19, 31);
     this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
       this.scene.launch("BattleScene", {
-        playerCreatureId: worldState.activeCreatureId,
+        playerPartyCreatureIds: [...worldState.selectedPartyCreatureIds],
         wildEncounter,
       });
       this.scene.pause();
@@ -635,7 +637,7 @@ export class OverworldScene extends Phaser.Scene {
     this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
       this.scene.launch("BattleScene", {
         battleId,
-        playerCreatureId: worldState.activeCreatureId,
+        playerPartyCreatureIds: [...worldState.selectedPartyCreatureIds],
       });
       this.scene.pause();
     });
@@ -660,8 +662,19 @@ export class OverworldScene extends Phaser.Scene {
         const alreadyOwned = worldState.ownedCreatureIds.includes(capturedId);
         if (!alreadyOwned) {
           worldState.ownedCreatureIds = [...worldState.ownedCreatureIds, capturedId];
-          worldState.activeCreatureId = capturedId;
-          this.setMessage(`${creatureName} joined your team and is now your active ally.`);
+          if (worldState.selectedPartyCreatureIds.length < 3) {
+            worldState.selectedPartyCreatureIds = [
+              ...worldState.selectedPartyCreatureIds,
+              capturedId,
+            ];
+          }
+          worldState.activeCreatureId =
+            worldState.selectedPartyCreatureIds[0] ?? capturedId;
+          this.setMessage(
+            worldState.selectedPartyCreatureIds.includes(capturedId)
+              ? `${creatureName} joined your team and was added to your battle buddies.`
+              : `${creatureName} joined your team. Open the party menu with C to add it to your battle buddies.`,
+          );
           saveWorldState();
         } else {
           this.setMessage(`${creatureName} retreated. Your team already knows this route well.`);
@@ -686,10 +699,12 @@ export class OverworldScene extends Phaser.Scene {
   private refreshStatus(): void {
     const defeatedCount = Object.keys(worldState.defeatedBattles).length;
     const collectedCount = Object.keys(worldState.collectedInteractives).length;
-    const activeCreatureName =
-      registry.creatures[worldState.activeCreatureId]?.name ?? worldState.activeCreatureId;
+    const leadCreatureName =
+      registry.creatures[worldState.selectedPartyCreatureIds[0]]?.name ??
+      worldState.selectedPartyCreatureIds[0] ??
+      worldState.activeCreatureId;
     this.statusText.setText(
-      `Hero: ${PLAYER_AVATARS[worldState.selectedAvatar].label}\nAlly: ${activeCreatureName}\nTeam: ${worldState.ownedCreatureIds.length}\nVictories: ${defeatedCount}\nDiscoveries: ${collectedCount}`,
+      `Hero: ${PLAYER_AVATARS[worldState.selectedAvatar].label}\nLead: ${leadCreatureName}\nParty: ${worldState.selectedPartyCreatureIds.length}/3\nOwned: ${worldState.ownedCreatureIds.length}\nVictories: ${defeatedCount}\nDiscoveries: ${collectedCount}`,
     );
   }
 
@@ -719,12 +734,13 @@ export class OverworldScene extends Phaser.Scene {
       [
         "Move: Arrow keys or WASD",
         "Interact: E",
-        "Swap ally: C",
+        "Party menu: C",
         "Help: H",
         "Reset progress: R",
         "",
         `Hero: ${PLAYER_AVATARS[worldState.selectedAvatar].label}`,
-        `Active ally: ${registry.creatures[worldState.activeCreatureId]?.name ?? worldState.activeCreatureId}`,
+        `Lead buddy: ${registry.creatures[worldState.selectedPartyCreatureIds[0]]?.name ?? worldState.activeCreatureId}`,
+        `Battle buddies: ${worldState.selectedPartyCreatureIds.length}/3`,
         `Owned allies: ${worldState.ownedCreatureIds.length}`,
         `Story: ${this.activeStory.storyTitle}`,
         `Difficulty: ${DIFFICULTY_RULES[worldState.selectedDifficulty].label}`,
@@ -777,21 +793,24 @@ export class OverworldScene extends Phaser.Scene {
     this.setMessage("Progress reset. Mossgrove Town is fresh again.");
   }
 
-  private cycleActiveCreature(): void {
-    if (this.transitionLocked || this.helpVisible || worldState.ownedCreatureIds.length <= 1) {
-      if (worldState.ownedCreatureIds.length <= 1) {
-        this.setMessage("You only have one ally right now. Win a wild battle to recruit more.");
-      }
+  private openPartyMenu(): void {
+    if (this.transitionLocked || this.helpVisible) {
       return;
     }
 
-    const currentIndex = Math.max(0, worldState.ownedCreatureIds.indexOf(worldState.activeCreatureId));
-    const nextIndex = (currentIndex + 1) % worldState.ownedCreatureIds.length;
-    worldState.activeCreatureId = worldState.ownedCreatureIds[nextIndex];
-    saveWorldState();
+    this.player.setVelocity(0, 0);
+    this.interactionLockedUntil = this.time.now + 160;
+    this.scene.launch("PartyScene");
+    this.scene.pause();
+  }
+
+  private handlePartyUpdated(): void {
+    this.scene.resume();
+    this.transitionLocked = false;
     this.refreshStatus();
-    this.interactionLockedUntil = this.time.now + 120;
-    this.setMessage(`${registry.creatures[worldState.activeCreatureId]?.name ?? "Ally"} is now leading the team.`);
+    this.setMessage(
+      `${registry.creatures[worldState.selectedPartyCreatureIds[0]]?.name ?? "Lead buddy"} is now leading your ${worldState.selectedPartyCreatureIds.length}-buddy party.`,
+    );
   }
 
   private rollEncounter(zone: EncounterZone) {

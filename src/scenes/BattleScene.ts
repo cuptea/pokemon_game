@@ -17,7 +17,8 @@ import type {
 } from "../types/world";
 
 type BattleSceneData = {
-  playerCreatureId: string;
+  playerCreatureId?: string;
+  playerPartyCreatureIds?: string[];
   battleId?: string;
   wildEncounter?: WildEncounterDefinition;
 };
@@ -37,7 +38,8 @@ type RuntimeCreature = {
 
 export class BattleScene extends Phaser.Scene {
   private battleId?: string;
-  private player!: RuntimeCreature;
+  private playerParty!: RuntimeCreature[];
+  private playerIndex = 0;
   private enemyParty!: RuntimeCreature[];
   private enemyIndex = 0;
   private infoText!: Phaser.GameObjects.Text;
@@ -84,7 +86,12 @@ export class BattleScene extends Phaser.Scene {
 
   init(data: BattleSceneData): void {
     this.battleId = data.battleId;
-    this.player = this.buildCreature(data.playerCreatureId);
+    const playerPartyIds =
+      data.playerPartyCreatureIds?.length && data.playerPartyCreatureIds.length > 0
+        ? data.playerPartyCreatureIds
+        : [data.playerCreatureId ?? worldState.activeCreatureId];
+    this.playerParty = playerPartyIds.map((creatureId) => this.buildCreature(creatureId));
+    this.playerIndex = 0;
     this.enemyIndex = 0;
     this.resolved = false;
     this.actionLocked = true;
@@ -130,7 +137,7 @@ export class BattleScene extends Phaser.Scene {
       .ellipse(728, 242, 164, 30, this.currentEnemy.color, 0.22)
       .setStrokeStyle(2, 0xffffff, 0.14);
     this.add
-      .ellipse(228, 424, 188, 36, this.player.color, 0.24)
+      .ellipse(228, 424, 188, 36, this.currentPlayer.color, 0.24)
       .setStrokeStyle(2, 0xffffff, 0.16);
     this.add
       .rectangle(726, 232, 280, 2, 0xffffff, 0.08)
@@ -187,10 +194,10 @@ export class BattleScene extends Phaser.Scene {
     this.playerSprite = this.add.image(
       this.playerSpriteHome.x,
       this.playerSpriteHome.y,
-      this.getCreatureTextureKey(this.player, "player"),
+      this.getCreatureTextureKey(this.currentPlayer, "player"),
     );
     this.applyCreatureVisual(this.enemySprite, this.currentEnemy, "enemy");
-    this.applyCreatureVisual(this.playerSprite, this.player, "player");
+    this.applyCreatureVisual(this.playerSprite, this.currentPlayer, "player");
 
     this.add
       .text(720, 296, "FOE", {
@@ -487,10 +494,10 @@ export class BattleScene extends Phaser.Scene {
     this.runButton.setVisible(false);
     this.currentQuiz = pickBattleQuizQuestion({
       battleSource: this.battleSource,
-      playerMoveName: this.player.moveName,
+      playerMoveName: this.currentPlayer.moveName,
       enemyCreatureId: this.currentEnemy.id,
       enemyMoveName: this.currentEnemy.moveName,
-      playerLevel: this.player.level,
+      playerLevel: this.currentPlayer.level,
       enemyLevel: this.currentEnemy.level,
       enemyPartySize: this.enemyParty.length,
       enemyPartyIndex: this.enemyIndex,
@@ -564,13 +571,13 @@ export class BattleScene extends Phaser.Scene {
     }
 
     this.setBanner(evaluation.banner, THEME.success);
-    const baseDamage = this.calculateDamage(this.player, this.currentEnemy);
+    const baseDamage = this.calculateDamage(this.currentPlayer, this.currentEnemy);
     const playerDamage = Math.max(
       2,
       Math.round(baseDamage * evaluation.damageMultiplier) + evaluation.flatDamageBonus,
     );
     this.infoText.setText(
-      `${correctChoice?.label ?? "That answer"} was right. ${this.player.name} turns it into ${playerDamage} damage with ${this.player.moveName}.${this.quizStreak > 1 ? ` Streak ${this.quizStreak} is live.` : ""}`,
+      `${correctChoice?.label ?? "That answer"} was right. ${this.currentPlayer.name} turns it into ${playerDamage} damage with ${this.currentPlayer.moveName}.${this.quizStreak > 1 ? ` Streak ${this.quizStreak} is live.` : ""}`,
     );
     this.time.delayedCall(evaluation.revealDelayMs, () => {
       this.clearQuizState();
@@ -609,7 +616,7 @@ export class BattleScene extends Phaser.Scene {
     this.revealQuizAnswer(undefined, correctChoice?.id);
     this.setBanner(evaluation.banner, THEME.accent);
     this.infoText.setText(
-      `${this.player.name} missed the opening. Correct answer: ${correctChoice?.label ?? "unknown"}. ${this.currentEnemy.name} counters immediately.`,
+      `${this.currentPlayer.name} missed the opening. Correct answer: ${correctChoice?.label ?? "unknown"}. ${this.currentEnemy.name} counters immediately.`,
     );
     this.time.delayedCall(evaluation.revealDelayMs, () => {
       this.clearQuizState();
@@ -622,20 +629,21 @@ export class BattleScene extends Phaser.Scene {
     enemyPunishBonus = 0,
     punishLabel?: string,
   ): void {
-    const enemyDamage = this.calculateDamage(this.currentEnemy, this.player) + enemyPunishBonus;
-    this.player.hp = Math.max(0, this.player.hp - enemyDamage);
+    const enemyDamage =
+      this.calculateDamage(this.currentEnemy, this.currentPlayer) + enemyPunishBonus;
+    this.currentPlayer.hp = Math.max(0, this.currentPlayer.hp - enemyDamage);
     this.infoText.setText(
       enemyPunishBonus > 0
         ? `${this.currentEnemy.name} punishes the ${punishLabel ?? "miss"} with ${this.currentEnemy.moveName} for ${enemyDamage} damage.`
-        : `${this.player.name} dealt ${playerDamage}. ${this.currentEnemy.name} answered with ${this.currentEnemy.moveName}.`,
+        : `${this.currentPlayer.name} dealt ${playerDamage}. ${this.currentEnemy.name} answered with ${this.currentEnemy.moveName}.`,
     );
 
     this.animateImpact(this.playerSprite, enemyDamage, THEME.danger, () => {
-      this.tweenHpBar(this.playerBar, this.player.hp / this.player.maxHp);
+      this.tweenHpBar(this.playerBar, this.currentPlayer.hp / this.currentPlayer.maxHp);
       this.refreshHud();
 
-      if (this.player.hp === 0) {
-        this.time.delayedCall(450, () => this.finishBattle("lose"));
+      if (this.currentPlayer.hp === 0) {
+        this.time.delayedCall(450, () => this.handlePlayerFaint());
         return;
       }
 
@@ -757,9 +765,13 @@ export class BattleScene extends Phaser.Scene {
     this.bannerText.setBackgroundColor(`#${color.toString(16).padStart(6, "0")}`);
   }
 
+  private setInfoText(text: string): void {
+    this.infoText.setText(text);
+  }
+
   private calculateDamage(attacker: RuntimeCreature, defender: RuntimeCreature): number {
     const difficultyMultiplier =
-      attacker === this.player
+      attacker === this.currentPlayer
         ? 1
         : DIFFICULTY_RULES[worldState.selectedDifficulty].enemyAttackMultiplier;
 
@@ -774,7 +786,7 @@ export class BattleScene extends Phaser.Scene {
       `${this.currentEnemy.name}  Lv ${this.currentEnemy.level}\nHP ${this.currentEnemy.hp}/${this.currentEnemy.maxHp}\nParty ${this.enemyIndex + 1}/${this.enemyParty.length}`,
     );
     this.playerHpText.setText(
-      `${this.player.name}  Lv ${this.player.level}\nHP ${this.player.hp}/${this.player.maxHp}\nQuiz Move ${this.player.moveName}`,
+      `${this.currentPlayer.name}  Lv ${this.currentPlayer.level}\nHP ${this.currentPlayer.hp}/${this.currentPlayer.maxHp}\nParty ${this.playerIndex + 1}/${this.playerParty.length}\nQuiz Move ${this.currentPlayer.moveName}`,
     );
   }
 
@@ -850,6 +862,10 @@ export class BattleScene extends Phaser.Scene {
     };
   }
 
+  private get currentPlayer(): RuntimeCreature {
+    return this.playerParty[this.playerIndex];
+  }
+
   private get currentEnemy(): RuntimeCreature {
     return this.enemyParty[this.enemyIndex];
   }
@@ -857,6 +873,11 @@ export class BattleScene extends Phaser.Scene {
   private startCreatureIdleAnimations(): void {
     this.refreshIdleTween(this.playerSprite, this.playerSpriteBaseScale, -1.8, 560);
     this.refreshIdleTween(this.enemySprite, this.enemySpriteBaseScale, 1.8, 620);
+  }
+
+  private refreshPlayerSprite(): void {
+    this.applyCreatureVisual(this.playerSprite, this.currentPlayer, "player");
+    this.refreshIdleTween(this.playerSprite, this.playerSpriteBaseScale, -1.8, 560);
   }
 
   private playOpeningAnimation(): void {
@@ -880,6 +901,43 @@ export class BattleScene extends Phaser.Scene {
       x: this.enemySpriteHome.x,
       duration: 360,
       ease: "Back.easeOut",
+    });
+  }
+
+  private playPlayerSendOutAnimation(): void {
+    this.playerSprite.setPosition(this.playerSpriteHome.x - 52, this.playerSpriteHome.y);
+    this.tweens.add({
+      targets: this.playerSprite,
+      x: this.playerSpriteHome.x,
+      duration: 360,
+      ease: "Back.easeOut",
+    });
+  }
+
+  private handlePlayerFaint(): void {
+    const faintedName = this.currentPlayer.name;
+    this.quizStreak = 0;
+    this.setBanner(`${faintedName} fainted`, THEME.danger);
+
+    this.time.delayedCall(380, () => {
+      if (this.playerIndex < this.playerParty.length - 1) {
+        this.playerIndex += 1;
+        this.refreshPlayerSprite();
+        this.refreshHud();
+        this.playPlayerSendOutAnimation();
+        this.setBanner(`${this.currentPlayer.name} steps in`, THEME.accentAlt);
+        this.setInfoText(
+          `${faintedName} fainted. ${this.currentPlayer.name} takes the front slot for your team.`,
+        );
+        this.time.delayedCall(700, () => {
+          this.attackButton.setVisible(true);
+          this.runButton.setVisible(true);
+          this.setActionButtonsEnabled(true);
+        });
+        return;
+      }
+
+      this.finishBattle("lose");
     });
   }
 

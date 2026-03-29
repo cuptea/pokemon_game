@@ -1,4 +1,5 @@
 import { creatures } from "../data/creatures";
+import { normalizePartySelection } from "./party";
 import type { GameDifficulty, PlayerAvatar, WorldState } from "../types/world";
 
 const STORAGE_KEY = "pokemon_game_world_state_v1";
@@ -13,6 +14,7 @@ const initialState = (): WorldState => ({
   defeatedBattles: {},
   collectedInteractives: {},
   ownedCreatureIds: [STARTER_CREATURE_ID],
+  selectedPartyCreatureIds: [STARTER_CREATURE_ID],
   activeCreatureId: STARTER_CREATURE_ID,
   selectedAvatar: "blaze",
   selectedDifficulty: "adventure",
@@ -46,16 +48,25 @@ export function loadWorldState(): WorldState {
 
     const parsed = JSON.parse(raw) as Partial<WorldState>;
     const ownedCreatureIds = sanitizeOwnedCreatureIds(parsed.ownedCreatureIds);
-    const activeCreatureId =
+    const legacyLead =
       typeof parsed.activeCreatureId === "string" && ownedCreatureIds.includes(parsed.activeCreatureId)
+        ? [parsed.activeCreatureId]
+        : undefined;
+    const selectedPartyCreatureIds = normalizePartySelection(
+      ownedCreatureIds,
+      parsed.selectedPartyCreatureIds ?? legacyLead,
+    );
+    const activeCreatureId =
+      typeof parsed.activeCreatureId === "string" && selectedPartyCreatureIds.includes(parsed.activeCreatureId)
         ? parsed.activeCreatureId
-        : ownedCreatureIds[0];
+        : selectedPartyCreatureIds[0] ?? ownedCreatureIds[0];
     return {
       currentMapId: parsed.currentMapId ?? "mossgrove_town",
       currentSpawnId: parsed.currentSpawnId ?? "town_square",
       defeatedBattles: parsed.defeatedBattles ?? {},
       collectedInteractives: parsed.collectedInteractives ?? {},
       ownedCreatureIds,
+      selectedPartyCreatureIds,
       activeCreatureId,
       selectedAvatar: VALID_AVATARS.includes(parsed.selectedAvatar as PlayerAvatar)
         ? (parsed.selectedAvatar as PlayerAvatar)
@@ -87,6 +98,7 @@ export function resetWorldState(): void {
   worldState.defeatedBattles = fresh.defeatedBattles;
   worldState.collectedInteractives = fresh.collectedInteractives;
   worldState.ownedCreatureIds = fresh.ownedCreatureIds;
+  worldState.selectedPartyCreatureIds = fresh.selectedPartyCreatureIds;
   worldState.activeCreatureId = fresh.activeCreatureId;
   worldState.selectedAvatar = fresh.selectedAvatar;
   worldState.selectedDifficulty = fresh.selectedDifficulty;

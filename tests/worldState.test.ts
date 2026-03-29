@@ -36,6 +36,7 @@ describe("worldState persistence", () => {
     expect(module.worldState.defeatedBattles).toEqual({});
     expect(module.worldState.collectedInteractives).toEqual({});
     expect(module.worldState.ownedCreatureIds).toEqual(["spriglet"]);
+    expect(module.worldState.selectedPartyCreatureIds).toEqual(["spriglet"]);
     expect(module.worldState.activeCreatureId).toBe("spriglet");
     expect(module.worldState.selectedAvatar).toBe("blaze");
     expect(module.worldState.selectedDifficulty).toBe("adventure");
@@ -52,7 +53,8 @@ describe("worldState persistence", () => {
     module.worldState.currentSpawnId = "forest_return";
     module.worldState.defeatedBattles.scoutLinaBattle = true;
     module.worldState.collectedInteractives.route_bridge_cache = true;
-    module.worldState.ownedCreatureIds = ["spriglet", "mosslet"];
+    module.worldState.ownedCreatureIds = ["spriglet", "mosslet", "puddlepup"];
+    module.worldState.selectedPartyCreatureIds = ["mosslet", "puddlepup", "spriglet"];
     module.worldState.activeCreatureId = "mosslet";
     module.worldState.selectedAvatar = "mist";
     module.worldState.selectedDifficulty = "heroic";
@@ -73,6 +75,7 @@ describe("worldState persistence", () => {
     expect(module.worldState.defeatedBattles).toEqual({});
     expect(module.worldState.collectedInteractives).toEqual({});
     expect(module.worldState.ownedCreatureIds).toEqual(["spriglet"]);
+    expect(module.worldState.selectedPartyCreatureIds).toEqual(["spriglet"]);
     expect(module.worldState.activeCreatureId).toBe("spriglet");
     expect(module.worldState.selectedAvatar).toBe("blaze");
     expect(module.worldState.selectedDifficulty).toBe("adventure");
@@ -86,7 +89,8 @@ describe("worldState persistence", () => {
         pokemon_game_world_state_v1: JSON.stringify({
           selectedAvatar: "unknown",
           selectedDifficulty: "nightmare",
-          ownedCreatureIds: ["mosslet", "unknown", "mosslet"],
+          ownedCreatureIds: ["mosslet", "unknown", "mosslet", "puddlepup", "gullip"],
+          selectedPartyCreatureIds: ["missing", "gullip"],
           activeCreatureId: "missing",
           introCompleted: true,
         }),
@@ -97,8 +101,9 @@ describe("worldState persistence", () => {
 
     expect(module.worldState.selectedAvatar).toBe("blaze");
     expect(module.worldState.selectedDifficulty).toBe("adventure");
-    expect(module.worldState.ownedCreatureIds).toEqual(["mosslet"]);
-    expect(module.worldState.activeCreatureId).toBe("mosslet");
+    expect(module.worldState.ownedCreatureIds).toEqual(["mosslet", "puddlepup", "gullip"]);
+    expect(module.worldState.selectedPartyCreatureIds).toEqual(["gullip", "mosslet", "puddlepup"]);
+    expect(module.worldState.activeCreatureId).toBe("gullip");
     expect(module.worldState.introCompleted).toBe(true);
   });
 });

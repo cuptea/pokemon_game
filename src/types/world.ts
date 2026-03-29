@@ -160,6 +160,7 @@ export type WorldState = {
   defeatedBattles: Record<string, boolean>;
   collectedInteractives: Record<string, boolean>;
   ownedCreatureIds: string[];
+  selectedPartyCreatureIds: string[];
   activeCreatureId: string;
   selectedAvatar: PlayerAvatar;
   selectedDifficulty: GameDifficulty;
