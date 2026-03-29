@@ -1,12 +1,23 @@
-import type { DecorationPlacement, MapModule, PlayerAvatar, WorldPatch } from "../types/world";
+import type {
+  DecorationPlacement,
+  MapModule,
+  PlayerAvatar,
+  WorldPatch,
+} from "../types/world";
 
 type HeroMapVariant = {
+  heroBackgroundColor?: Partial<Record<PlayerAvatar, string>>;
   heroPatches: Partial<Record<PlayerAvatar, WorldPatch[]>>;
   heroDecorations: Partial<Record<PlayerAvatar, DecorationPlacement[]>>;
 };
 
 export const heroMapVariants: Record<string, HeroMapVariant> = {
   mossgrove_town: {
+    heroBackgroundColor: {
+      blaze: "#6f4a35",
+      mist: "#5a8aa7",
+      grove: "#496b46",
+    },
     heroPatches: {
       blaze: [
         { x: 1180, y: 320, width: 160, height: 620, color: 0xb86b35, strokeColor: 0xffb703, alpha: 0.5 },
@@ -37,6 +48,11 @@ export const heroMapVariants: Record<string, HeroMapVariant> = {
     },
   },
   route_01_fields: {
+    heroBackgroundColor: {
+      blaze: "#7e5a34",
+      mist: "#6693a6",
+      grove: "#51784b",
+    },
     heroPatches: {
       blaze: [
         { x: 1600, y: 220, width: 390, height: 210, color: 0x9c5c2b, strokeColor: 0xffb703, alpha: 0.34 },
@@ -67,6 +83,11 @@ export const heroMapVariants: Record<string, HeroMapVariant> = {
     },
   },
   forest_01_glen: {
+    heroBackgroundColor: {
+      blaze: "#5b4733",
+      mist: "#3f6a73",
+      grove: "#31533a",
+    },
     heroPatches: {
       blaze: [
         { x: 1540, y: 760, width: 350, height: 220, color: 0x7b5e3b, strokeColor: 0xffb703, alpha: 0.3 },
@@ -97,6 +118,11 @@ export const heroMapVariants: Record<string, HeroMapVariant> = {
     },
   },
   lake_edge_01: {
+    heroBackgroundColor: {
+      blaze: "#8f7754",
+      mist: "#6aa6ca",
+      grove: "#648c67",
+    },
     heroPatches: {
       blaze: [
         { x: 740, y: 0, width: 140, height: 1100, color: 0xa44a3f, strokeColor: 0xffb703, alpha: 0.18 },
@@ -126,6 +152,11 @@ export const heroMapVariants: Record<string, HeroMapVariant> = {
     },
   },
   sidepath_01_hidden_grove: {
+    heroBackgroundColor: {
+      blaze: "#5f4a39",
+      mist: "#466778",
+      grove: "#2f5a3a",
+    },
     heroPatches: {
       blaze: [
         { x: 330, y: 210, width: 360, height: 220, color: 0x7b5e3b, strokeColor: 0xffb703, alpha: 0.24 },
@@ -160,6 +191,7 @@ export function applyHeroMapVariants(maps: Record<string, MapModule>): Record<st
       continue;
     }
 
+    map.heroBackgroundColor = variants.heroBackgroundColor;
     map.heroPatches = variants.heroPatches;
     map.heroDecorations = variants.heroDecorations;
   }

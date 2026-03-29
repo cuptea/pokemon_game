@@ -44,6 +44,7 @@ export class BattleScene extends Phaser.Scene {
   private enemyParty!: RuntimeCreature[];
   private enemyIndex = 0;
   private infoText!: Phaser.GameObjects.Text;
+  private promptSupportText!: Phaser.GameObjects.Text;
   private playerHpText!: Phaser.GameObjects.Text;
   private enemyHpText!: Phaser.GameObjects.Text;
   private attackButton!: Phaser.GameObjects.Text;
@@ -56,6 +57,7 @@ export class BattleScene extends Phaser.Scene {
     three: Phaser.Input.Keyboard.Key;
   };
   private quizHintText!: Phaser.GameObjects.Text;
+  private quizPromptFrame!: Phaser.GameObjects.Rectangle;
   private bannerText!: Phaser.GameObjects.Text;
   private playerBar!: Phaser.GameObjects.Rectangle;
   private enemyBar!: Phaser.GameObjects.Rectangle;
@@ -148,6 +150,18 @@ export class BattleScene extends Phaser.Scene {
     this.add
       .rectangle(232, 414, 300, 2, 0xffffff, 0.1)
       .setAngle(4);
+    if (this.battleSource === "trainer") {
+      this.add.rectangle(480, 320, 760, 12, this.visualTheme.horizon, 0.16);
+      this.add.rectangle(174, 410, 210, 6, this.visualTheme.accent, 0.16).setAngle(-8);
+      this.add.rectangle(780, 238, 210, 6, this.visualTheme.accentSoft, 0.16).setAngle(8);
+      this.add.rectangle(106, 320, 5, 250, this.visualTheme.haze, 0.12).setAngle(12);
+      this.add.rectangle(854, 320, 5, 250, this.visualTheme.haze, 0.12).setAngle(-12);
+    } else {
+      for (let index = 0; index < 5; index += 1) {
+        this.add.ellipse(96 + index * 96, 454 + (index % 2) * 8, 66, 18, this.visualTheme.horizon, 0.2);
+        this.add.ellipse(622 + index * 54, 280 + (index % 2) * 6, 44, 12, this.visualTheme.horizon, 0.16);
+      }
+    }
 
     this.add.text(34, 24, this.battleSource === "wild" ? "Wild Encounter" : "Trainer Battle", {
       fontFamily: GAME_FONT,
@@ -155,6 +169,20 @@ export class BattleScene extends Phaser.Scene {
       color: THEME.text,
       fontStyle: "bold",
     });
+    this.add
+      .tileSprite(480, 56, 900, 24, this.visualTheme.overlayTexture)
+      .setTint(this.visualTheme.accent)
+      .setAlpha(0.14);
+    this.add
+      .text(866, 26, this.battleSource === "wild" ? "FIELD THREAT" : "TACTICAL DUEL", {
+        fontFamily: GAME_FONT,
+        fontSize: "14px",
+        color: toHexColor(this.visualTheme.skyTop),
+        backgroundColor: toHexColor(this.visualTheme.accentSoft),
+        padding: { x: 10, y: 5 },
+        fontStyle: "bold",
+      })
+      .setOrigin(1, 0);
 
     createUiPanel({
       scene: this,
@@ -213,12 +241,28 @@ export class BattleScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
     this.add
+      .text(720, 318, this.battleSource === "wild" ? "ROAMING CREATURE" : "TRAINER PARTY", {
+        fontFamily: GAME_FONT,
+        fontSize: "12px",
+        color: THEME.textMuted,
+        fontStyle: "bold",
+      })
+      .setOrigin(0.5);
+    this.add
       .text(220, 504, "ALLY", {
         fontFamily: GAME_FONT,
         fontSize: "16px",
         color: THEME.textDark,
         backgroundColor: "#ffe066",
         padding: { x: 10, y: 4 },
+        fontStyle: "bold",
+      })
+      .setOrigin(0.5);
+    this.add
+      .text(220, 526, "TEAM LEAD", {
+        fontFamily: GAME_FONT,
+        fontSize: "12px",
+        color: THEME.textMuted,
         fontStyle: "bold",
       })
       .setOrigin(0.5);
@@ -259,6 +303,13 @@ export class BattleScene extends Phaser.Scene {
       color: THEME.textMuted,
       fontStyle: "bold",
     });
+    this.quizPromptFrame = this.add
+      .rectangle(668, 318, 286, 132)
+      .setStrokeStyle(2, this.visualTheme.accentSoft, 0.72)
+      .setDepth(2);
+    this.add
+      .rectangle(668, 318, 286, 132, this.visualTheme.haze, 0.05)
+      .setDepth(1.5);
     this.quizHintText = this.add.text(
       528,
       268,
@@ -270,6 +321,21 @@ export class BattleScene extends Phaser.Scene {
         fontStyle: "bold",
         wordWrap: { width: 272 },
         lineSpacing: 6,
+      },
+    );
+    this.promptSupportText = this.add.text(
+      528,
+      370,
+      this.battleSource === "wild"
+        ? "Wild questions are about tempo. Answer fast to keep control."
+        : "Trainer duels reward cleaner reads and punish hesitation harder.",
+      {
+        fontFamily: GAME_FONT,
+        fontSize: "14px",
+        color: THEME.textMuted,
+        fontStyle: "bold",
+        wordWrap: { width: 272 },
+        lineSpacing: 4,
       },
     );
     this.add.rectangle(528, 430, 250, 10, 0x30475e, 0.9).setOrigin(0, 0.5);
@@ -300,11 +366,23 @@ export class BattleScene extends Phaser.Scene {
       height: 96,
       variant: "warm",
     });
+    this.add.text(40, 538, "BATTLE LOG", {
+      fontFamily: GAME_FONT,
+      fontSize: "14px",
+      color: THEME.textMuted,
+      fontStyle: "bold",
+    });
     this.infoText = this.add.text(40, 546, "", {
       fontFamily: GAME_FONT,
-      fontSize: "21px",
+      fontSize: "19px",
       color: THEME.textMuted,
       wordWrap: { width: 880 },
+    });
+    this.add.text(528, 444, "COMMAND", {
+      fontFamily: GAME_FONT,
+      fontSize: "14px",
+      color: THEME.textMuted,
+      fontStyle: "bold",
     });
 
     this.attackButton = this.createActionButton(
@@ -340,8 +418,8 @@ export class BattleScene extends Phaser.Scene {
     this.setBanner(this.introText, THEME.accent);
     this.infoText.setText(
       this.battleSource === "wild"
-        ? `${this.currentEnemy.name} blocks the path. Press START QUIZ ATTACK to open the question.`
-        : `Trainer sends out ${this.currentEnemy.name}. Press START QUIZ ATTACK to open the question.`,
+        ? `${this.currentEnemy.name} blocks the path. Open the quiz to strike before it can lunge again.`
+        : `Trainer sends out ${this.currentEnemy.name}. Open the quiz to take control of the tempo.`,
     );
 
     this.time.delayedCall(850, () => {
@@ -371,6 +449,8 @@ export class BattleScene extends Phaser.Scene {
         fixedWidth,
       })
       .setInteractive({ useHandCursor: true });
+    button.setData("buttonTone", tone);
+    button.setData("buttonState", "idle");
     button.setStroke(toHexColor(palette.stroke), 4);
     button.setShadow(0, 2, "#08131f", 0, false, true);
 
@@ -385,14 +465,16 @@ export class BattleScene extends Phaser.Scene {
       }
     });
     button.on("pointerover", () => {
-      if (!this.actionLocked) {
+      if (!this.actionLocked && button.getData("buttonState") === "idle") {
         button.setStyle({ color: toHexColor(palette.textHover), backgroundColor: toHexColor(palette.fillHover) });
         button.setScale(1.03);
       }
     });
     button.on("pointerout", () => {
-      button.setStyle({ color: THEME.text, backgroundColor: toHexColor(palette.fill) });
-      button.setScale(1);
+      this.styleQuizButton(
+        button,
+        (button.getData("buttonState") as "idle" | "correct" | "wrong" | "warning") ?? "idle",
+      );
     });
     return button;
   }
@@ -500,22 +582,30 @@ export class BattleScene extends Phaser.Scene {
     button: Phaser.GameObjects.Text,
     state: "idle" | "correct" | "wrong" | "warning",
   ): void {
+    const tone = (button.getData("buttonTone") as "accent" | "cool" | undefined) ?? "cool";
+    const palette = this.getButtonPalette(tone);
+    button.setData("buttonState", state);
+
     if (state === "correct") {
-      button.setStyle({ color: "#b7efc5" });
+      button.setStyle({ color: "#08131f", backgroundColor: "#b7efc5" });
+      button.setStroke("#0d3b2e", 4);
       button.setScale(1.05);
       return;
     }
     if (state === "wrong") {
-      button.setStyle({ color: "#ff9b9b" });
+      button.setStyle({ color: "#ffffff", backgroundColor: "#a01f2f" });
+      button.setStroke("#ffd7d7", 4);
       button.setScale(1.02);
       return;
     }
     if (state === "warning") {
-      button.setStyle({ color: "#ffe8a3" });
+      button.setStyle({ color: "#08131f", backgroundColor: "#ffe8a3" });
+      button.setStroke("#8a5a00", 4);
       button.setScale(1.04);
       return;
     }
-    button.setStyle({ color: THEME.text });
+    button.setStyle({ color: THEME.text, backgroundColor: toHexColor(palette.fill) });
+    button.setStroke(toHexColor(palette.stroke), 4);
     button.setScale(1);
   }
 
@@ -544,6 +634,18 @@ export class BattleScene extends Phaser.Scene {
     const warningMs = getQuizWarningTimeMs(this.quizTimeLimitMs);
     this.quizTimerText.setText(`${(remainingMs / 1000).toFixed(1)}s`);
     this.quizTimerText.setColor(remainingMs <= warningMs ? "#ff9b9b" : "#ffe8a3");
+    this.promptSupportText.setColor(remainingMs <= warningMs ? "#ffe8a3" : THEME.textMuted);
+    this.quizPromptFrame.setStrokeStyle(
+      2,
+      remainingMs <= warningMs ? THEME.accent : this.visualTheme.accent,
+      remainingMs <= warningMs ? 1 : 0.96,
+    );
+
+    for (const button of this.quizButtons) {
+      if (button.getData("buttonState") === "idle") {
+        this.styleQuizButton(button, remainingMs <= warningMs ? "warning" : "idle");
+      }
+    }
   }
 
   private setActionButtonsEnabled(enabled: boolean): void {
@@ -551,10 +653,13 @@ export class BattleScene extends Phaser.Scene {
     this.attackButton.setAlpha(enabled ? 1 : 0.6);
     this.runButton.setAlpha(enabled ? 1 : 0.6);
     this.quizHintText.setAlpha(enabled ? 0.95 : 0.45);
+    this.promptSupportText.setAlpha(enabled ? 0.92 : 0.5);
+    this.quizPromptFrame.setAlpha(enabled ? 0.82 : 0.48);
     if (enabled) {
       this.attackButton.setVisible(true);
       this.runButton.setVisible(true);
       this.quizHintText.setVisible(true);
+      this.promptSupportText.setVisible(true);
     }
   }
 
@@ -567,6 +672,26 @@ export class BattleScene extends Phaser.Scene {
     this.quizTimerText.setVisible(visible);
     this.quizHintText.setVisible(true);
     this.quizHintText.setAlpha(visible ? 1 : 0.92);
+    this.promptSupportText.setVisible(true);
+    this.promptSupportText.setAlpha(visible ? 0.98 : 0.84);
+    this.quizPromptFrame.setStrokeStyle(
+      2,
+      visible ? this.visualTheme.accent : this.visualTheme.accentSoft,
+      visible ? 0.96 : 0.62,
+    );
+    if (visible) {
+      this.tweens.add({
+        targets: this.quizPromptFrame,
+        alpha: { from: 0.6, to: 1 },
+        duration: 620,
+        yoyo: true,
+        repeat: -1,
+        ease: "Sine.easeInOut",
+      });
+    } else {
+      this.tweens.killTweensOf(this.quizPromptFrame);
+      this.quizPromptFrame.setAlpha(0.82);
+    }
   }
 
   private clearQuizState(): void {
@@ -579,7 +704,17 @@ export class BattleScene extends Phaser.Scene {
     this.setQuizButtonsVisible(false);
     this.quizTimerFill.displayWidth = 250;
     this.quizTimerText.setText("");
-    this.quizHintText.setText("Press START QUIZ ATTACK or tap Q to reveal the current question.");
+    this.quizHintText.setText(
+      this.battleSource === "wild"
+        ? "Press START QUIZ ATTACK or tap Q to reveal the question and ambush the wild foe."
+        : "Press START QUIZ ATTACK or tap Q to reveal the question and seize the duel's momentum.",
+    );
+    this.promptSupportText.setText(
+      this.battleSource === "wild"
+        ? "Wild questions are about tempo. Answer fast to keep control."
+        : "Trainer duels reward cleaner reads and punish hesitation harder.",
+    );
+    this.promptSupportText.setColor(THEME.textMuted);
     this.quizStartedAt = 0;
     this.quizTimeLimitMs = 0;
   }
@@ -614,6 +749,12 @@ export class BattleScene extends Phaser.Scene {
       THEME.accentAlt,
     );
     this.quizHintText.setText(this.currentQuiz.prompt);
+    this.promptSupportText.setText(
+      this.battleSource === "wild"
+        ? "Pick fast. Wild foes swing momentum quickly."
+        : "Read carefully. Trainer foes punish slow, sloppy answers.",
+    );
+    this.promptSupportText.setColor(THEME.textMuted);
     this.infoText.setText(
       `Press 1, 2, or 3, or click an answer before time runs out.${this.quizStreak > 0 ? ` Streak: ${this.quizStreak}.` : ""}`,
     );
@@ -665,6 +806,9 @@ export class BattleScene extends Phaser.Scene {
 
     if (!correct) {
       this.setBanner(evaluation.banner, THEME.danger);
+      this.promptSupportText.setText("Wrong answer. The foe gets a clean punish window.");
+      this.promptSupportText.setColor("#ffb3b3");
+      this.quizPromptFrame.setStrokeStyle(2, THEME.danger, 0.96);
       this.infoText.setText(
         `${choice?.label ?? "That answer"} was wrong. Correct answer: ${correctChoice?.label ?? "unknown"}. ${this.currentEnemy.name} takes the opening and strikes first.`,
       );
@@ -676,6 +820,13 @@ export class BattleScene extends Phaser.Scene {
     }
 
     this.setBanner(evaluation.banner, THEME.success);
+    this.promptSupportText.setText(
+      evaluation.grade === "perfect"
+        ? "Perfect read. Bonus damage applied."
+        : "Correct answer. Your attack lands stronger.",
+    );
+    this.promptSupportText.setColor("#b7efc5");
+    this.quizPromptFrame.setStrokeStyle(2, THEME.success, 0.96);
     const baseDamage = this.calculateDamage(this.currentPlayer, this.currentEnemy);
     const playerDamage = Math.max(
       2,
@@ -720,6 +871,9 @@ export class BattleScene extends Phaser.Scene {
     this.quizStreak = evaluation.nextStreak;
     this.revealQuizAnswer(undefined, correctChoice?.id);
     this.setBanner(evaluation.banner, THEME.accent);
+    this.promptSupportText.setText("Timer expired. The enemy seizes the tempo.");
+    this.promptSupportText.setColor("#ffe8a3");
+    this.quizPromptFrame.setStrokeStyle(2, THEME.accent, 0.96);
     this.infoText.setText(
       `${this.currentPlayer.name} missed the opening. Correct answer: ${correctChoice?.label ?? "unknown"}. ${this.currentEnemy.name} counters immediately.`,
     );
@@ -868,6 +1022,16 @@ export class BattleScene extends Phaser.Scene {
   private setBanner(text: string, color: number): void {
     this.bannerText.setText(text);
     this.bannerText.setBackgroundColor(`#${color.toString(16).padStart(6, "0")}`);
+    this.bannerText.setScale(0.98);
+    this.tweens.killTweensOf(this.bannerText);
+    this.tweens.add({
+      targets: this.bannerText,
+      scaleX: 1,
+      scaleY: 1,
+      alpha: { from: 0.82, to: 1 },
+      duration: 140,
+      ease: "Quad.easeOut",
+    });
   }
 
   private setInfoText(text: string): void {

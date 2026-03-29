@@ -137,6 +137,7 @@ export type MapModule = {
   width: number;
   height: number;
   backgroundColor: string;
+  heroBackgroundColor?: Partial<Record<PlayerAvatar, string>>;
   patches: WorldPatch[];
   heroPatches?: Partial<Record<PlayerAvatar, WorldPatch[]>>;
   walls: Rect[];

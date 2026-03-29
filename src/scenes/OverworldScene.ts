@@ -12,6 +12,7 @@ import type {
   EncounterZone,
   ExitDefinition,
   Facing,
+  HeroMapOverride,
   InteractablePlacement,
   MapModule,
   NpcPlacement,
@@ -119,7 +120,7 @@ export class OverworldScene extends Phaser.Scene {
   }
 
   private get availableExits(): ExitDefinition[] {
-    return this.map.exits.filter(
+    return this.activeExits.filter(
       (exit) => !exit.availableTo || exit.availableTo.includes(worldState.selectedAvatar),
     );
   }
@@ -133,6 +134,21 @@ export class OverworldScene extends Phaser.Scene {
       ...this.map.decorations,
       ...(this.map.heroDecorations?.[worldState.selectedAvatar] ?? []),
     ];
+  }
+
+  private get activeBackgroundColor() {
+    return this.map.heroBackgroundColor?.[worldState.selectedAvatar] ?? this.map.backgroundColor;
+  }
+
+  private get activeInteractives() {
+    return this.mergeHeroOverrides(
+      this.map.interactives,
+      this.map.heroInteractives?.[worldState.selectedAvatar],
+    );
+  }
+
+  private get activeExits() {
+    return this.mergeHeroOverrides(this.map.exits, this.map.heroExits?.[worldState.selectedAvatar]);
   }
 
   private bindInput(): void {
@@ -149,6 +165,30 @@ export class OverworldScene extends Phaser.Scene {
     }) as OverworldScene["keys"];
   }
 
+  private mergeHeroOverrides<T extends { id: string }>(
+    baseItems: T[],
+    heroOverrides?: HeroMapOverride<T>,
+  ): T[] {
+    if (!heroOverrides || heroOverrides.length === 0) {
+      return baseItems;
+    }
+
+    const overrideMap = new Map(heroOverrides.map((item) => [item.id, item]));
+    const merged = baseItems.map((item) => ({
+      ...item,
+      ...(overrideMap.get(item.id) ?? {}),
+    }));
+    const knownIds = new Set(baseItems.map((item) => item.id));
+
+    for (const override of heroOverrides) {
+      if (!knownIds.has(override.id)) {
+        merged.push(override as T);
+      }
+    }
+
+    return merged;
+  }
+
   private loadCurrentMap(initial = false): void {
     this.map = registry.maps[worldState.currentMapId];
     this.visualTheme = getStoryVisualTheme(worldState.selectedAvatar, this.map.id);
@@ -158,7 +198,7 @@ export class OverworldScene extends Phaser.Scene {
     this.physics.world.colliders.destroy();
     this.physics.world.setBounds(0, 0, this.map.width, this.map.height);
     this.cameras.main.setBounds(0, 0, this.map.width, this.map.height);
-    this.cameras.main.setBackgroundColor(this.map.backgroundColor);
+    this.cameras.main.setBackgroundColor(this.activeBackgroundColor);
 
     this.renderMap();
     this.createUi();

@@ -16,10 +16,12 @@ describe("hero map variants", () => {
 
     for (const mapId of sharedMaps) {
       const map = maps[mapId];
+      expect(map.heroBackgroundColor, `${mapId} should define hero background colors`).toBeDefined();
       expect(map.heroPatches, `${mapId} should define hero patches`).toBeDefined();
       expect(map.heroDecorations, `${mapId} should define hero decorations`).toBeDefined();
 
       for (const avatar of avatars) {
+        expect(map.heroBackgroundColor?.[avatar], `${mapId}:${avatar} should have a hero background color`).toBeTruthy();
         expect(map.heroPatches?.[avatar]?.length, `${mapId}:${avatar} should have hero patches`).toBeGreaterThan(0);
         expect(
           map.heroDecorations?.[avatar]?.length,
