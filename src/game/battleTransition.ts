@@ -13,6 +13,7 @@ export function finalizeBattleTransition(
 ): void {
   if (result.outcome === "lose") {
     handlers.startGameOver();
+    handlers.stopBattle();
     return;
   }
 

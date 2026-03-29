@@ -34,7 +34,6 @@ export class GameOverScene extends Phaser.Scene {
     const story = getLocalizedStorySurface(worldState.selectedAvatar);
     const avatarLabel = getAvatarLabel(worldState.selectedAvatar);
 
-    this.scene.stop("OverworldScene");
     this.cameras.main.setBackgroundColor("#0c0612");
 
     this.add.rectangle(480, 320, 960, 640, 0x120819, 1);
@@ -178,14 +177,22 @@ export class GameOverScene extends Phaser.Scene {
   }
 
   private async loadLeaderboard(): Promise<void> {
-    await submitLeaderboardFromCurrentWorldState();
-    const entries = await fetchLeaderboardEntries(GAME_OVER_LEADERBOARD_LIMIT);
+    try {
+      await submitLeaderboardFromCurrentWorldState();
+      const entries = await fetchLeaderboardEntries(GAME_OVER_LEADERBOARD_LIMIT);
 
-    if (!this.sys.isActive()) {
-      return;
+      if (!this.sys.isActive()) {
+        return;
+      }
+
+      this.leaderboardText.setText(formatGameOverLeaderboard(entries));
+    } catch {
+      if (!this.sys.isActive()) {
+        return;
+      }
+
+      this.leaderboardText.setText(t("gameover.leaderboard_empty"));
     }
-
-    this.leaderboardText.setText(formatGameOverLeaderboard(entries));
   }
 
   private restartAdventure(): void {

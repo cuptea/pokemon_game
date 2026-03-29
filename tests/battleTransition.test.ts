@@ -55,6 +55,6 @@ describe("battle transition handoff", () => {
       stopBattle: vi.fn(() => calls.push("stop")),
     });
 
-    expect(calls).toEqual(["gameover"]);
+    expect(calls).toEqual(["gameover", "stop"]);
   });
 });
