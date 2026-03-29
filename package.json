@@ -10,6 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "firebase": "^12.11.0",
     "phaser": "^3.90.0"
   },
   "devDependencies": {

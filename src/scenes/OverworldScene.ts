@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { registry } from "../data/registry";
 import { getStoryProfile, getStoryStatus } from "../data/stories";
+import { submitLeaderboardFromCurrentWorldState } from "../services/leaderboard";
 import { getStoryVisualTheme, toHexColor, type StoryVisualTheme } from "../game/storyVisuals";
 import { getTerrainStyle, isWaterTone } from "../game/terrainRender";
 import { createUiPanel } from "../game/uiSkin";
@@ -1009,6 +1010,9 @@ export class OverworldScene extends Phaser.Scene {
     this.lastPlayerPosition.set(this.player.x, this.player.y);
     this.encounterTravel = 0;
     this.refreshStatus();
+    if (result.outcome === "win") {
+      void submitLeaderboardFromCurrentWorldState();
+    }
   }
 
   private setMessage(message: string): void {

@@ -3,6 +3,7 @@ import { getStoryProfile } from "../data/stories";
 import { resetAdventurePreservingProfile, worldState } from "../game/worldState";
 import { GAME_FONT, PLAYER_AVATARS } from "../game/theme";
 import { createUiPanel } from "../game/uiSkin";
+import { submitLeaderboardFromCurrentWorldState } from "../services/leaderboard";
 
 type GameOverSceneData = {
   message?: string;
@@ -26,6 +27,7 @@ export class GameOverScene extends Phaser.Scene {
     const avatarLabel = PLAYER_AVATARS[worldState.selectedAvatar].label;
 
     this.scene.stop("OverworldScene");
+    void submitLeaderboardFromCurrentWorldState();
     this.cameras.main.setBackgroundColor("#0c0612");
 
     this.add.rectangle(480, 320, 960, 640, 0x120819, 1);

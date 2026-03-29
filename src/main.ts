@@ -1,4 +1,4 @@
-import { createGame } from "./game/createGame";
+import { mountAppShell } from "./app/AppShell";
 
 const root = document.querySelector<HTMLDivElement>("#app");
 
@@ -13,4 +13,4 @@ root.style.width = "100vw";
 root.style.height = "100vh";
 root.style.overflow = "hidden";
 
-createGame(root);
+mountAppShell(root);
