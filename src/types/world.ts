@@ -103,6 +103,7 @@ export type ExitDefinition = Rect & {
   prompt: string;
   targetMapId: string;
   targetSpawnId: string;
+  availableTo?: PlayerAvatar[];
 };
 
 export type EncounterSlot = {

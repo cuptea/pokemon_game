@@ -69,4 +69,19 @@ describe("world registry integrity", () => {
       }
     }
   });
+
+  it("keeps avatar-locked exits wired to known heroes", () => {
+    for (const map of Object.values(maps)) {
+      for (const exit of map.exits) {
+        if (!exit.availableTo) {
+          continue;
+        }
+
+        expect(exit.availableTo.length, `${map.id}:${exit.id} should lock to at least one avatar`).toBeGreaterThan(0);
+        for (const avatar of exit.availableTo) {
+          expect(["blaze", "mist", "grove"]).toContain(avatar);
+        }
+      }
+    }
+  });
 });

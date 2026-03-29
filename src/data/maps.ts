@@ -1,4 +1,5 @@
 import type { MapModule } from "../types/world";
+import { storyMaps } from "./storyMaps";
 
 const borderWalls = (width: number, height: number) => [
   { x: 0, y: 0, width, height: 48 },
@@ -674,9 +675,21 @@ export const maps: Record<string, MapModule> = {
         targetMapId: "route_01_fields",
         targetSpawnId: "forest_return",
       },
+      {
+        id: "forest_to_ember_watch",
+        x: 1920,
+        y: 820,
+        width: 110,
+        height: 130,
+        prompt: "Press E to climb toward Ember Watch Peak",
+        targetMapId: "blaze_ember_watch_peak",
+        targetSpawnId: "forest_climb",
+        availableTo: ["blaze"],
+      },
     ],
     spawnPoints: {
       route_entry: { id: "route_entry", x: 170, y: 580 },
+      ember_return: { id: "ember_return", x: 1860, y: 890 },
     },
   },
   lake_edge_01: {
@@ -833,9 +846,21 @@ export const maps: Record<string, MapModule> = {
         targetMapId: "route_01_fields",
         targetSpawnId: "lake_return",
       },
+      {
+        id: "lake_to_ferry",
+        x: 720,
+        y: 430,
+        width: 90,
+        height: 180,
+        prompt: "Press E to continue to Silvermere Ferry",
+        targetMapId: "mist_silvermere_ferry",
+        targetSpawnId: "lake_path",
+        availableTo: ["mist"],
+      },
     ],
     spawnPoints: {
       field_path: { id: "field_path", x: 160, y: 560 },
+      ferry_return: { id: "ferry_return", x: 690, y: 520 },
     },
   },
   sidepath_01_hidden_grove: {
@@ -970,9 +995,22 @@ export const maps: Record<string, MapModule> = {
         targetMapId: "route_01_fields",
         targetSpawnId: "grove_return",
       },
+      {
+        id: "grove_to_sanctuary",
+        x: 1080,
+        y: 410,
+        width: 80,
+        height: 150,
+        prompt: "Press E to follow the root path into the sanctuary",
+        targetMapId: "grove_root_sanctuary",
+        targetSpawnId: "grove_gap",
+        availableTo: ["grove"],
+      },
     ],
     spawnPoints: {
       route_gap: { id: "route_gap", x: 150, y: 480 },
+      sanctuary_return: { id: "sanctuary_return", x: 1030, y: 480 },
     },
   },
+  ...storyMaps,
 };

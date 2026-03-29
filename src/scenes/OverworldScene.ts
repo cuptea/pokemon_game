@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { registry } from "../data/registry";
-import { getStoryProfile } from "../data/stories";
+import { getStoryProfile, getStoryStatus } from "../data/stories";
 import { createUiPanel } from "../game/uiSkin";
 import { resetWorldState, saveWorldState, worldState } from "../game/worldState";
 import { DIFFICULTY_RULES, GAME_FONT, PLAYER_AVATARS, THEME } from "../game/theme";
@@ -110,6 +110,16 @@ export class OverworldScene extends Phaser.Scene {
     return getStoryProfile(worldState.selectedAvatar);
   }
 
+  private get storyStatus() {
+    return getStoryStatus(worldState);
+  }
+
+  private get availableExits(): ExitDefinition[] {
+    return this.map.exits.filter(
+      (exit) => !exit.availableTo || exit.availableTo.includes(worldState.selectedAvatar),
+    );
+  }
+
   private bindInput(): void {
     this.cursors = this.input.keyboard!.createCursorKeys();
     this.keys = this.input.keyboard!.addKeys({
@@ -140,7 +150,11 @@ export class OverworldScene extends Phaser.Scene {
     this.lastPlayerPosition.set(spawn.x, spawn.y);
     this.encounterTravel = 0;
     this.areaText.setText(this.map.title);
-    this.setMessage(initial ? this.activeStory.openingMessage : `You arrived in ${this.map.title}.`);
+    this.setMessage(
+      initial
+        ? this.activeStory.openingMessage
+        : `You arrived in ${this.map.title}. ${this.storyStatus.currentObjective}`,
+    );
     this.refreshStatus();
     saveWorldState();
 
@@ -268,7 +282,7 @@ export class OverworldScene extends Phaser.Scene {
         .setDepth(decoration.y);
     }
 
-    for (const exit of this.map.exits) {
+    for (const exit of this.availableExits) {
       this.drawExitMarker(exit);
     }
 
@@ -461,7 +475,7 @@ export class OverworldScene extends Phaser.Scene {
       }
     }
 
-    for (const exit of this.map.exits) {
+    for (const exit of this.availableExits) {
       const zone = new Phaser.Geom.Rectangle(exit.x, exit.y, exit.width, exit.height);
       if (Phaser.Geom.Rectangle.Contains(zone, this.player.x, this.player.y)) {
         nearest = { kind: "exit", data: exit, prompt: exit.prompt };
@@ -496,11 +510,11 @@ export class OverworldScene extends Phaser.Scene {
 
     if (this.encounterZone) {
       this.hudText.setText(
-        `Exploring ${this.map.title}. ${this.encounterZone.label}. Goal: ${this.activeStory.objectiveShort}`,
+        `Exploring ${this.map.title}. ${this.encounterZone.label}. ${this.storyStatus.chapterTitle}. Goal: ${this.storyStatus.objectiveShort}`,
       );
     } else {
       this.hudText.setText(
-        `Arrow keys/WASD move. E interacts. C opens party. Goal: ${this.activeStory.objectiveShort}`,
+        `Arrow keys/WASD move. E interacts. C opens party. ${this.storyStatus.chapterTitle}. Goal: ${this.storyStatus.objectiveShort}`,
       );
     }
   }
@@ -709,8 +723,8 @@ export class OverworldScene extends Phaser.Scene {
   }
 
   private createHelpPanel(width: number, height: number): Phaser.GameObjects.Container {
-    const panelWidth = 520;
-    const panelHeight = 320;
+    const panelWidth = 560;
+    const panelHeight = 520;
     const panel = this.add.container(width / 2, height / 2).setScrollFactor(0).setDepth(40);
 
     const backdrop = createUiPanel({
@@ -743,21 +757,30 @@ export class OverworldScene extends Phaser.Scene {
         `Battle buddies: ${worldState.selectedPartyCreatureIds.length}/3`,
         `Owned allies: ${worldState.ownedCreatureIds.length}`,
         `Story: ${this.activeStory.storyTitle}`,
+        `Act: ${this.storyStatus.actLabel}`,
         `Difficulty: ${DIFFICULTY_RULES[worldState.selectedDifficulty].label}`,
         "",
-        `Goal: ${this.activeStory.startingObjective}`,
+        `Goal: ${this.storyStatus.currentObjective}`,
+        `Next landmark: ${this.storyStatus.nextLandmark}`,
         "",
         `Mystery: ${this.activeStory.regionalMystery}`,
         "",
         `Liora's read: ${this.activeStory.mentorHook}`,
         "",
+        `Route: ${this.storyStatus.routeLabel}`,
+        "",
+        `Arc: ${this.activeStory.longArc}`,
+        "",
+        `Chapter note: ${this.storyStatus.chapterSummary}`,
+        "",
         `Asset direction: ${Object.values({ ...registry.maps }).length} maps are ready for a CC0-first art swap.`,
       ].join("\n"),
       {
         fontFamily: GAME_FONT,
-        fontSize: "18px",
+        fontSize: "15px",
         color: THEME.textMuted,
         wordWrap: { width: panelWidth - 48 },
+        lineSpacing: 2,
       },
     );
 

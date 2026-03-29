@@ -1,4 +1,5 @@
 import type { TrainerBattleDefinition } from "../types/world";
+import { storyTrainerBattles } from "./storyBattles";
 
 export const trainerBattles: Record<string, TrainerBattleDefinition> = {
   mentorBattle: {
@@ -128,4 +129,5 @@ export const trainerBattles: Record<string, TrainerBattleDefinition> = {
       { creatureId: "bramblear", level: 5 },
     ],
   },
+  ...storyTrainerBattles,
 };

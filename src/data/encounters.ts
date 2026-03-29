@@ -1,4 +1,5 @@
 import type { EncounterTable } from "../types/world";
+import { storyEncounterTables } from "./storyEncounters";
 
 export const encounterTables: Record<string, EncounterTable> = {
   plains_start: {
@@ -85,4 +86,5 @@ export const encounterTables: Record<string, EncounterTable> = {
       { creatureId: "cindercub", weight: 10, minLevel: 5, maxLevel: 6 },
     ],
   },
+  ...storyEncounterTables,
 };

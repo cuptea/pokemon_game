@@ -256,7 +256,7 @@ export class StartScene extends Phaser.Scene {
     const avatar = PLAYER_AVATARS[AVATAR_ORDER[this.avatarIndex]];
     const story = getStoryProfile(AVATAR_ORDER[this.avatarIndex]);
     this.hintText.setText(
-      `${avatar.label} selected. ${story.storyTitle}.\nGoal: ${story.objectiveShort}`,
+      `${avatar.label} selected. ${story.storyTitle}.\nGoal: ${story.objectiveShort}\nRoute: ${story.routeLabel}`,
     );
   }
 
