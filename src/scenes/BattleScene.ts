@@ -7,6 +7,7 @@ import {
   getQuizTimeLimitMs,
   getQuizWarningTimeMs,
 } from "../game/quizBattle";
+import { getStoryVisualTheme, toHexColor, type StoryVisualTheme } from "../game/storyVisuals";
 import { createUiPanel } from "../game/uiSkin";
 import { DIFFICULTY_RULES, GAME_FONT, THEME } from "../game/theme";
 import { worldState } from "../game/worldState";
@@ -71,6 +72,7 @@ export class BattleScene extends Phaser.Scene {
   private rewardText = "";
   private encounteredCreatureId?: string;
   private currentQuiz: BattleQuizQuestion | null = null;
+  private visualTheme!: StoryVisualTheme;
   private quizTimerFill!: Phaser.GameObjects.Rectangle;
   private quizTimerText!: Phaser.GameObjects.Text;
   private quizTimerEvent?: Phaser.Time.TimerEvent;
@@ -119,11 +121,12 @@ export class BattleScene extends Phaser.Scene {
   }
 
   create(): void {
+    this.visualTheme = getStoryVisualTheme(worldState.selectedAvatar, worldState.currentMapId);
     this.cameras.main.fadeIn(120, 7, 19, 31);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleShutdown, this);
     this.events.once(Phaser.Scenes.Events.DESTROY, this.handleShutdown, this);
 
-    this.add.image(480, 320, "battle_bg");
+    this.drawBattleBackdrop();
     this.add
       .rectangle(480, 320, 960, 640, THEME.battleFill, 0.96)
       .setStrokeStyle(4, THEME.panelStroke);
@@ -309,14 +312,13 @@ export class BattleScene extends Phaser.Scene {
       472,
       "Start Quiz Attack",
       () => this.beginQuizTurn(),
+      "accent",
     );
-    this.runButton = this.createActionButton(570, 520, "Run", () =>
-      this.finishBattle("escape"),
-    );
+    this.runButton = this.createActionButton(570, 520, "Run", () => this.finishBattle("escape"), "cool");
     this.quizButtons = [
-      this.createActionButton(528, 448, "", () => this.answerQuiz(0), 250),
-      this.createActionButton(528, 496, "", () => this.answerQuiz(1), 250),
-      this.createActionButton(528, 544, "", () => this.answerQuiz(2), 250),
+      this.createActionButton(528, 448, "", () => this.answerQuiz(0), "cool", 250),
+      this.createActionButton(528, 496, "", () => this.answerQuiz(1), "cool", 250),
+      this.createActionButton(528, 544, "", () => this.answerQuiz(2), "cool", 250),
     ];
     this.setQuizButtonsVisible(false);
     this.quizHotkeys = this.input.keyboard!.addKeys({
@@ -353,20 +355,23 @@ export class BattleScene extends Phaser.Scene {
     y: number,
     label: string,
     onClick: () => void,
+    tone: "accent" | "cool" = "cool",
     fixedWidth?: number,
   ): Phaser.GameObjects.Text {
+    const palette = this.getButtonPalette(tone);
     const button = this.add
       .text(x, y, label, {
         fontFamily: GAME_FONT,
         fontSize: "22px",
         color: THEME.text,
+        backgroundColor: toHexColor(palette.fill),
         padding: { x: 16, y: 10 },
         fontStyle: "bold",
         align: "center",
         fixedWidth,
       })
       .setInteractive({ useHandCursor: true });
-    button.setStroke("#08131f", 4);
+    button.setStroke(toHexColor(palette.stroke), 4);
     button.setShadow(0, 2, "#08131f", 0, false, true);
 
     button.on("pointerdown", () => {
@@ -381,15 +386,114 @@ export class BattleScene extends Phaser.Scene {
     });
     button.on("pointerover", () => {
       if (!this.actionLocked) {
-        button.setStyle({ color: "#ffe8a3" });
+        button.setStyle({ color: toHexColor(palette.textHover), backgroundColor: toHexColor(palette.fillHover) });
         button.setScale(1.03);
       }
     });
     button.on("pointerout", () => {
-      button.setStyle({ color: THEME.text });
+      button.setStyle({ color: THEME.text, backgroundColor: toHexColor(palette.fill) });
       button.setScale(1);
     });
     return button;
+  }
+
+  private getButtonPalette(tone: "accent" | "cool") {
+    if (tone === "accent") {
+      return {
+        fill: this.visualTheme.accent,
+        fillHover: this.visualTheme.accentSoft,
+        stroke: this.visualTheme.skyTop,
+        textHover: this.visualTheme.skyTop,
+      };
+    }
+
+    return {
+      fill: this.visualTheme.skyBottom,
+      fillHover: this.visualTheme.haze,
+      stroke: this.visualTheme.skyTop,
+      textHover: this.visualTheme.skyTop,
+    };
+  }
+
+  private drawBattleBackdrop(): void {
+    this.add.image(480, 320, "battle_bg").setTint(this.visualTheme.haze).setAlpha(0.32);
+    const skyTexture = this.add
+      .tileSprite(480, 170, 1040, 280, this.visualTheme.overlayTexture)
+      .setTint(this.visualTheme.haze)
+      .setAlpha(0.09);
+    this.tweens.add({
+      targets: skyTexture,
+      tilePositionX: this.visualTheme.atmosphere === "mist" ? 72 : 42,
+      duration: this.visualTheme.atmosphere === "mist" ? 18000 : 14000,
+      repeat: -1,
+      ease: "Linear",
+    });
+
+    this.add.rectangle(480, 120, 960, 240, this.visualTheme.skyTop, 0.38);
+    this.add.rectangle(480, 270, 960, 240, this.visualTheme.skyBottom, 0.24);
+
+    if (this.visualTheme.silhouette === "water") {
+      this.add.ellipse(480, 250, 820, 84, this.visualTheme.horizon, 0.2);
+      this.add.ellipse(620, 234, 220, 30, this.visualTheme.haze, 0.16);
+      this.add.ellipse(320, 228, 180, 22, this.visualTheme.haze, 0.1);
+    } else if (this.visualTheme.silhouette === "roots") {
+      for (let index = 0; index < 5; index += 1) {
+        this.add.ellipse(120 + index * 190, 248 + (index % 2) * 18, 220, 92, this.visualTheme.horizon, 0.24);
+      }
+      this.add.rectangle(480, 280, 960, 34, this.visualTheme.horizon, 0.22);
+    } else {
+      for (let index = 0; index < 4; index += 1) {
+        this.add.ellipse(160 + index * 220, 246 + (index % 2) * 12, 280, 96, this.visualTheme.horizon, 0.24);
+      }
+      this.add.rectangle(480, 292, 960, 44, this.visualTheme.horizon, 0.24);
+    }
+
+    const stageGlow = this.add.ellipse(480, 320, 820, 280, this.visualTheme.accentSoft, 0.08);
+    this.tweens.add({
+      targets: stageGlow,
+      alpha: { from: 0.04, to: 0.11 },
+      duration: 2200,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
+    });
+
+    for (let index = 0; index < 14; index += 1) {
+      const mote =
+        this.visualTheme.atmosphere === "mist"
+          ? this.add.ellipse(
+              Phaser.Math.Between(80, 880),
+              Phaser.Math.Between(80, 420),
+              Phaser.Math.Between(24, 48),
+              Phaser.Math.Between(8, 18),
+              this.visualTheme.haze,
+              0.08,
+            )
+          : this.add.ellipse(
+              Phaser.Math.Between(80, 880),
+              Phaser.Math.Between(80, 420),
+              this.visualTheme.atmosphere === "embers" ? 4 : 6,
+              this.visualTheme.atmosphere === "embers" ? 4 : 9,
+              this.visualTheme.atmosphere === "embers" ? this.visualTheme.accent : this.visualTheme.accentSoft,
+              this.visualTheme.atmosphere === "embers" ? 0.46 : 0.14,
+            );
+      this.tweens.add({
+        targets: mote,
+        x: mote.x + Phaser.Math.Between(-28, 28),
+        y: mote.y + Phaser.Math.Between(this.visualTheme.atmosphere === "embers" ? -52 : -10, this.visualTheme.atmosphere === "mist" ? 12 : -40),
+        alpha:
+          this.visualTheme.atmosphere === "mist"
+            ? { from: 0.04, to: 0.11 }
+            : this.visualTheme.atmosphere === "embers"
+              ? { from: 0.22, to: 0.6 }
+              : { from: 0.08, to: 0.2 },
+        duration: Phaser.Math.Between(2800, 5200),
+        repeat: -1,
+        yoyo: true,
+        delay: index * 120,
+        ease: "Sine.easeInOut",
+      });
+    }
   }
 
   private styleQuizButton(

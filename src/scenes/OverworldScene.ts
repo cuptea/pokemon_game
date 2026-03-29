@@ -1,11 +1,13 @@
 import Phaser from "phaser";
 import { registry } from "../data/registry";
 import { getStoryProfile, getStoryStatus } from "../data/stories";
+import { getStoryVisualTheme, toHexColor, type StoryVisualTheme } from "../game/storyVisuals";
 import { createUiPanel } from "../game/uiSkin";
 import { resetWorldState, saveWorldState, worldState } from "../game/worldState";
 import { DIFFICULTY_RULES, GAME_FONT, PLAYER_AVATARS, THEME } from "../game/theme";
 import type {
   BattleResult,
+  DecorationPlacement,
   EncounterSlot,
   EncounterZone,
   ExitDefinition,
@@ -14,6 +16,7 @@ import type {
   MapModule,
   NpcPlacement,
   TrainerPlacement,
+  WorldPatch,
 } from "../types/world";
 
 const MAX_SPEED = 190;
@@ -41,6 +44,7 @@ export class OverworldScene extends Phaser.Scene {
   private player!: Phaser.Physics.Arcade.Sprite;
   private playerShadow!: Phaser.GameObjects.Ellipse;
   private map!: MapModule;
+  private visualTheme!: StoryVisualTheme;
   private promptText!: Phaser.GameObjects.Text;
   private messageText!: Phaser.GameObjects.Text;
   private hudText!: Phaser.GameObjects.Text;
@@ -136,6 +140,7 @@ export class OverworldScene extends Phaser.Scene {
 
   private loadCurrentMap(initial = false): void {
     this.map = registry.maps[worldState.currentMapId];
+    this.visualTheme = getStoryVisualTheme(worldState.selectedAvatar, this.map.id);
     const spawn = this.map.spawnPoints[worldState.currentSpawnId];
 
     this.children.removeAll();
@@ -249,8 +254,143 @@ export class OverworldScene extends Phaser.Scene {
     });
   }
 
+  private renderBackdrop(): void {
+    const centerX = this.map.width / 2;
+    const centerY = this.map.height / 2;
+    const skyGlow = this.add
+      .rectangle(centerX, centerY * 0.42, this.map.width + 120, this.map.height * 0.68, this.visualTheme.skyTop, 0.22)
+      .setDepth(-90);
+    const hazeBand = this.add
+      .tileSprite(centerX, 180, this.map.width + 180, 240, this.visualTheme.overlayTexture)
+      .setTint(this.visualTheme.haze)
+      .setAlpha(0.07)
+      .setDepth(-88);
+
+    this.tweens.add({
+      targets: hazeBand,
+      tilePositionX: this.visualTheme.atmosphere === "mist" ? 96 : 52,
+      duration: this.visualTheme.atmosphere === "mist" ? 24000 : 18000,
+      repeat: -1,
+      ease: "Linear",
+    });
+    this.tweens.add({
+      targets: skyGlow,
+      alpha: { from: 0.16, to: 0.26 },
+      duration: 3200,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
+    });
+
+    for (let index = 0; index < 6; index += 1) {
+      const width = 340 + index * 90;
+      const height = 90 + (index % 3) * 28;
+      this.add
+        .ellipse(120 + index * 280, 260 + (index % 2) * 22, width, height, this.visualTheme.horizon, 0.2)
+        .setDepth(-86 + index);
+    }
+
+    for (let index = 0; index < 16; index += 1) {
+      const mote =
+        this.visualTheme.atmosphere === "mist"
+          ? this.add.ellipse(
+              Phaser.Math.Between(40, this.map.width - 40),
+              Phaser.Math.Between(120, this.map.height - 120),
+              Phaser.Math.Between(28, 54),
+              Phaser.Math.Between(8, 18),
+              this.visualTheme.haze,
+              0.08,
+            )
+          : this.add.ellipse(
+              Phaser.Math.Between(40, this.map.width - 40),
+              Phaser.Math.Between(120, this.map.height - 120),
+              this.visualTheme.atmosphere === "embers" ? 4 : 7,
+              this.visualTheme.atmosphere === "embers" ? 4 : 10,
+              this.visualTheme.atmosphere === "embers" ? this.visualTheme.accent : this.visualTheme.accentSoft,
+              this.visualTheme.atmosphere === "embers" ? 0.42 : 0.14,
+            );
+      mote.setDepth(-72 + (index % 3));
+      this.tweens.add({
+        targets: mote,
+        x: mote.x + Phaser.Math.Between(-50, 50),
+        y: mote.y + Phaser.Math.Between(
+          this.visualTheme.atmosphere === "embers" ? -80 : -20,
+          this.visualTheme.atmosphere === "mist" ? 10 : -70,
+        ),
+        alpha:
+          this.visualTheme.atmosphere === "mist"
+            ? { from: 0.04, to: 0.12 }
+            : this.visualTheme.atmosphere === "embers"
+              ? { from: 0.22, to: 0.55 }
+              : { from: 0.08, to: 0.22 },
+        duration: Phaser.Math.Between(3600, 7200),
+        yoyo: true,
+        repeat: -1,
+        delay: index * 110,
+        ease: "Sine.easeInOut",
+      });
+    }
+  }
+
+  private addPatchAccent(patch: WorldPatch): void {
+    const waterTones = new Set([0x89d2dc, 0x5fa8d3, 0x7ec8e3, 0x95d5e8, 0xa9def9, 0x4f83aa, 0x5688b8]);
+    if (!waterTones.has(patch.color)) {
+      return;
+    }
+
+    for (let index = 0; index < 3; index += 1) {
+      const shimmer = this.add
+        .rectangle(
+          patch.x + patch.width * (0.18 + index * 0.27),
+          patch.y + patch.height * (0.22 + index * 0.2),
+          Math.max(36, patch.width * 0.26),
+          3,
+          0xffffff,
+          0.12,
+        )
+        .setAngle(-7)
+        .setDepth(patch.y + patch.height / 2 + index);
+      this.tweens.add({
+        targets: shimmer,
+        alpha: { from: 0.04, to: 0.16 },
+        x: shimmer.x + 16,
+        duration: 1800 + index * 260,
+        yoyo: true,
+        repeat: -1,
+        ease: "Sine.easeInOut",
+      });
+    }
+  }
+
+  private drawDecorationAura(decoration: DecorationPlacement): void {
+    if (!["tower", "dock", "house", "sign"].includes(decoration.textureKey)) {
+      return;
+    }
+
+    const scale = decoration.scale ?? 1;
+    const aura = this.add
+      .ellipse(
+        decoration.x,
+        decoration.y + 12,
+        Math.max(44, 76 * scale),
+        Math.max(18, 26 * scale),
+        decoration.textureKey === "tower" ? this.visualTheme.accent : this.visualTheme.accentSoft,
+        decoration.textureKey === "sign" ? 0.12 : 0.16,
+      )
+      .setDepth(decoration.y - 2);
+    this.tweens.add({
+      targets: aura,
+      alpha: { from: aura.alpha * 0.65, to: aura.alpha * 1.15 },
+      duration: decoration.textureKey === "tower" ? 1400 : 2000,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
+    });
+  }
+
   private renderMap(): void {
     this.tweens.killAll();
+    this.renderBackdrop();
     const graphics = this.add.graphics();
 
     for (const patch of this.map.patches) {
@@ -260,6 +400,7 @@ export class OverworldScene extends Phaser.Scene {
         graphics.lineStyle(3, patch.strokeColor, 0.9);
         graphics.strokeRect(patch.x, patch.y, patch.width, patch.height);
       }
+      this.addPatchAccent(patch);
     }
 
     for (const wall of this.map.walls) {
@@ -274,6 +415,7 @@ export class OverworldScene extends Phaser.Scene {
     }
 
     for (const decoration of this.map.decorations) {
+      this.drawDecorationAura(decoration);
       this.add
         .image(decoration.x, decoration.y, decoration.textureKey)
         .setTint(decoration.tint ?? 0xffffff)
@@ -889,6 +1031,8 @@ export class OverworldScene extends Phaser.Scene {
       exit.y <= 52 ||
       exit.x + exit.width >= this.map.width - 52 ||
       exit.y + exit.height >= this.map.height - 52;
+    const accent = borderExit ? this.visualTheme.accentSoft : this.visualTheme.accent;
+    const labelColor = borderExit ? this.visualTheme.haze : this.visualTheme.accentSoft;
 
     const threshold = this.add
       .rectangle(
@@ -896,10 +1040,10 @@ export class OverworldScene extends Phaser.Scene {
         centerY,
         Math.max(26, exit.width),
         Math.max(24, exit.height),
-        borderExit ? 0x2b6cb0 : 0xb08968,
+        borderExit ? this.visualTheme.horizon : this.visualTheme.skyBottom,
         borderExit ? 0.28 : 0.36,
       )
-      .setStrokeStyle(2, borderExit ? 0xd9f0ff : 0xf6bd60, 0.95)
+      .setStrokeStyle(2, accent, 0.95)
       .setDepth(centerY - 3);
 
     const highlight = this.add
@@ -908,7 +1052,7 @@ export class OverworldScene extends Phaser.Scene {
         centerY,
         Math.max(18, exit.width - 12),
         Math.max(14, exit.height - 12),
-        borderExit ? 0x84dcc6 : 0xffe8a3,
+        labelColor,
         borderExit ? 0.24 : 0.28,
       )
       .setDepth(centerY - 2);
@@ -928,7 +1072,7 @@ export class OverworldScene extends Phaser.Scene {
           fontFamily: GAME_FONT,
           fontSize: "14px",
           color: "#f8f9fa",
-          backgroundColor: "#17304b",
+          backgroundColor: toHexColor(this.visualTheme.skyTop),
           padding: { x: 8, y: 4 },
           fontStyle: "bold",
         })
@@ -947,7 +1091,7 @@ export class OverworldScene extends Phaser.Scene {
     }
 
     const lintel = this.add
-      .rectangle(centerX, exit.y - 8, Math.max(40, exit.width + 12), 8, 0xf6bd60, 0.95)
+      .rectangle(centerX, exit.y - 8, Math.max(40, exit.width + 12), 8, accent, 0.95)
       .setDepth(exit.y - 7);
     const sideLeft = this.add
       .rectangle(exit.x - 4, centerY, 8, Math.max(26, exit.height + 10), 0x7f5539, 0.92)
@@ -959,8 +1103,8 @@ export class OverworldScene extends Phaser.Scene {
       .text(centerX, exit.y - 24, "DOOR", {
         fontFamily: GAME_FONT,
         fontSize: "13px",
-        color: "#08131f",
-        backgroundColor: "#ffe066",
+        color: toHexColor(this.visualTheme.skyTop),
+        backgroundColor: toHexColor(this.visualTheme.accentSoft),
         padding: { x: 6, y: 3 },
         fontStyle: "bold",
       })
