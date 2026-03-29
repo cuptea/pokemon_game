@@ -1,5 +1,8 @@
 import type {
   DecorationPlacement,
+  ExitDefinition,
+  HeroMapOverride,
+  InteractablePlacement,
   MapModule,
   PlayerAvatar,
   WorldPatch,
@@ -9,6 +12,8 @@ type HeroMapVariant = {
   heroBackgroundColor?: Partial<Record<PlayerAvatar, string>>;
   heroPatches: Partial<Record<PlayerAvatar, WorldPatch[]>>;
   heroDecorations: Partial<Record<PlayerAvatar, DecorationPlacement[]>>;
+  heroInteractives?: Partial<Record<PlayerAvatar, HeroMapOverride<InteractablePlacement>>>;
+  heroExits?: Partial<Record<PlayerAvatar, HeroMapOverride<ExitDefinition>>>;
 };
 
 export const heroMapVariants: Record<string, HeroMapVariant> = {
@@ -46,6 +51,28 @@ export const heroMapVariants: Record<string, HeroMapVariant> = {
         { id: "grove_town_root_tree", textureKey: "tree", x: 890, y: 980, tint: 0x84a98c, scale: 1.12 },
       ],
     },
+    heroInteractives: {
+      blaze: [
+        { id: "town_board", markerLabel: "EMBER LEAD", markerTint: 0xffb703, markerFill: 0x4a2819 },
+      ],
+      mist: [
+        { id: "town_board", markerLabel: "FERRY CLUE", markerTint: 0xbde0fe, markerFill: 0x18304b },
+      ],
+      grove: [
+        { id: "town_board", markerLabel: "FOREST LEAD", markerTint: 0xcaffbf, markerFill: 0x1f3a24 },
+      ],
+    },
+    heroExits: {
+      blaze: [
+        { id: "town_to_route", markerLabel: "EMBER ROAD", markerTint: 0xffb703, markerFill: 0x4a2819 },
+      ],
+      mist: [
+        { id: "town_to_route", markerLabel: "SILVER ROAD", markerTint: 0xbde0fe, markerFill: 0x18304b },
+      ],
+      grove: [
+        { id: "town_to_route", markerLabel: "ROOT ROAD", markerTint: 0xcaffbf, markerFill: 0x1f3a24 },
+      ],
+    },
   },
   route_01_fields: {
     heroBackgroundColor: {
@@ -79,6 +106,28 @@ export const heroMapVariants: Record<string, HeroMapVariant> = {
       grove: [
         { id: "grove_route_root_marker", textureKey: "sign", x: 1710, y: 1010, tint: 0xcaffbf },
         { id: "grove_route_tree_extra", textureKey: "tree", x: 1540, y: 1010, tint: 0x84a98c, scale: 1.06 },
+      ],
+    },
+    heroInteractives: {
+      blaze: [
+        { id: "route_signpost", markerLabel: "EMBER TRACE", markerTint: 0xffd166, markerFill: 0x4a2819 },
+      ],
+      mist: [
+        { id: "route_signpost", markerLabel: "CURRENT SIGN", markerTint: 0xbde0fe, markerFill: 0x18304b },
+      ],
+      grove: [
+        { id: "route_signpost", markerLabel: "OLD PATH", markerTint: 0xcaffbf, markerFill: 0x1f3a24 },
+      ],
+    },
+    heroExits: {
+      blaze: [
+        { id: "route_to_forest", markerLabel: "EMBER PATH", markerTint: 0xffb703, markerFill: 0x4a2819 },
+      ],
+      mist: [
+        { id: "route_to_lake", markerLabel: "FERRY WAY", markerTint: 0xbde0fe, markerFill: 0x18304b },
+      ],
+      grove: [
+        { id: "route_to_grove", markerLabel: "ROOT TRAIL", markerTint: 0xcaffbf, markerFill: 0x1f3a24 },
       ],
     },
   },
@@ -194,6 +243,8 @@ export function applyHeroMapVariants(maps: Record<string, MapModule>): Record<st
     map.heroBackgroundColor = variants.heroBackgroundColor;
     map.heroPatches = variants.heroPatches;
     map.heroDecorations = variants.heroDecorations;
+    map.heroInteractives = variants.heroInteractives;
+    map.heroExits = variants.heroExits;
   }
 
   return maps;

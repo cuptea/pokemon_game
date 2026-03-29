@@ -439,6 +439,63 @@ export class OverworldScene extends Phaser.Scene {
     });
   }
 
+  private drawInteractableMarker(worldItem: InteractablePlacement): void {
+    const defaults =
+      worldItem.kind === "loot"
+        ? { label: "LOOT", tint: THEME.success, fill: this.visualTheme.horizon, radius: 26 }
+        : worldItem.kind === "quest"
+          ? { label: "CLUE", tint: this.visualTheme.accent, fill: this.visualTheme.skyTop, radius: 30 }
+          : { label: "READ", tint: this.visualTheme.accentSoft, fill: this.visualTheme.skyTop, radius: 24 };
+
+    const tint = worldItem.markerTint ?? defaults.tint;
+    const fill = worldItem.markerFill ?? defaults.fill;
+    const labelText = worldItem.markerLabel ?? defaults.label;
+    const radius = worldItem.markerRadius ?? defaults.radius;
+
+    const aura = this.add
+      .ellipse(
+        worldItem.x,
+        worldItem.y + 14,
+        radius * 2.5,
+        Math.max(16, radius * 0.95),
+        tint,
+        worldItem.kind === "quest" ? 0.22 : 0.18,
+      )
+      .setDepth(worldItem.y - 4);
+    const beacon = this.add
+      .circle(worldItem.x, worldItem.y - 22, Math.max(9, radius * 0.34), tint, 0.95)
+      .setStrokeStyle(2, 0xf8f9fa, 0.9)
+      .setDepth(worldItem.y - 2);
+    const label = this.add
+      .text(worldItem.x, worldItem.y - 48, labelText, {
+        fontFamily: GAME_FONT,
+        fontSize: "12px",
+        color: "#f8f9fa",
+        backgroundColor: toHexColor(fill),
+        padding: { x: 6, y: 3 },
+        fontStyle: "bold",
+      })
+      .setOrigin(0.5)
+      .setDepth(worldItem.y - 1);
+
+    this.tweens.add({
+      targets: [aura, beacon, label],
+      alpha: { from: 0.68, to: 1 },
+      duration: worldItem.kind === "quest" ? 760 : 980,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
+    });
+    this.tweens.add({
+      targets: [beacon, label],
+      y: "-=5",
+      duration: worldItem.kind === "loot" ? 1280 : 940,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
+    });
+  }
+
   private renderMap(): void {
     this.tweens.killAll();
     this.renderBackdrop();
@@ -479,15 +536,27 @@ export class OverworldScene extends Phaser.Scene {
       this.drawExitMarker(exit);
     }
 
-    for (const worldItem of this.map.interactives) {
+    for (const worldItem of this.activeInteractives) {
       if (worldItem.once && worldState.collectedInteractives[worldItem.id]) {
         continue;
       }
 
-      this.add
+      this.drawInteractableMarker(worldItem);
+      const itemSprite = this.add
         .image(worldItem.x, worldItem.y, worldItem.textureKey)
         .setTint(worldItem.tint ?? 0xffffff)
         .setDepth(worldItem.y);
+
+      if (worldItem.kind !== "sign") {
+        this.tweens.add({
+          targets: itemSprite,
+          y: itemSprite.y - 4,
+          duration: worldItem.kind === "quest" ? 920 : 1160,
+          yoyo: true,
+          repeat: -1,
+          ease: "Sine.easeInOut",
+        });
+      }
     }
 
     for (const npc of this.map.npcs) {
@@ -650,7 +719,7 @@ export class OverworldScene extends Phaser.Scene {
       }
     }
 
-    for (const worldItem of this.map.interactives) {
+    for (const worldItem of this.activeInteractives) {
       if (worldItem.once && worldState.collectedInteractives[worldItem.id]) {
         continue;
       }
@@ -1082,8 +1151,13 @@ export class OverworldScene extends Phaser.Scene {
       exit.y <= 52 ||
       exit.x + exit.width >= this.map.width - 52 ||
       exit.y + exit.height >= this.map.height - 52;
-    const accent = borderExit ? this.visualTheme.accentSoft : this.visualTheme.accent;
-    const labelColor = borderExit ? this.visualTheme.haze : this.visualTheme.accentSoft;
+    const accent =
+      exit.markerTint ??
+      (borderExit ? this.visualTheme.accentSoft : this.visualTheme.accent);
+    const labelColor =
+      exit.markerFill ??
+      (borderExit ? this.visualTheme.haze : this.visualTheme.accentSoft);
+    const markerLabel = exit.markerLabel ?? (borderExit ? "EXIT" : "DOOR");
 
     const threshold = this.add
       .rectangle(
@@ -1119,7 +1193,7 @@ export class OverworldScene extends Phaser.Scene {
 
     if (borderExit) {
       const arrow = this.add
-        .text(centerX, centerY - Math.max(26, exit.height) / 2 - 8, "EXIT", {
+        .text(centerX, centerY - Math.max(26, exit.height) / 2 - 8, markerLabel, {
           fontFamily: GAME_FONT,
           fontSize: "14px",
           color: "#f8f9fa",
@@ -1151,11 +1225,11 @@ export class OverworldScene extends Phaser.Scene {
       .rectangle(exit.x + exit.width + 4, centerY, 8, Math.max(26, exit.height + 10), 0x7f5539, 0.92)
       .setDepth(centerY - 4);
     const doorLabel = this.add
-      .text(centerX, exit.y - 24, "DOOR", {
+      .text(centerX, exit.y - 24, markerLabel, {
         fontFamily: GAME_FONT,
         fontSize: "13px",
         color: toHexColor(this.visualTheme.skyTop),
-        backgroundColor: toHexColor(this.visualTheme.accentSoft),
+        backgroundColor: toHexColor(labelColor),
         padding: { x: 6, y: 3 },
         fontStyle: "bold",
       })

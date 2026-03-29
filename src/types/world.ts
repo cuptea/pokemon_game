@@ -96,7 +96,13 @@ export type InteractablePlacement = {
   lines: string[];
   collectedLines?: string[];
   once?: boolean;
+  markerTint?: number;
+  markerFill?: number;
+  markerLabel?: string;
+  markerRadius?: number;
 };
+
+export type HeroMapOverride<T extends { id: string }> = Array<Partial<T> & Pick<T, "id">>;
 
 export type ExitDefinition = Rect & {
   id: string;
@@ -104,6 +110,9 @@ export type ExitDefinition = Rect & {
   targetMapId: string;
   targetSpawnId: string;
   availableTo?: PlayerAvatar[];
+  markerTint?: number;
+  markerFill?: number;
+  markerLabel?: string;
 };
 
 export type EncounterSlot = {
@@ -147,7 +156,9 @@ export type MapModule = {
   npcs: NpcPlacement[];
   trainers: TrainerPlacement[];
   interactives: InteractablePlacement[];
+  heroInteractives?: Partial<Record<PlayerAvatar, HeroMapOverride<InteractablePlacement>>>;
   exits: ExitDefinition[];
+  heroExits?: Partial<Record<PlayerAvatar, HeroMapOverride<ExitDefinition>>>;
   spawnPoints: Record<string, SpawnPoint>;
 };
 
