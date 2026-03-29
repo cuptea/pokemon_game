@@ -1,4 +1,5 @@
 import { registry } from "./registry";
+import { pokemonQuizEntries } from "./pokemonQuiz";
 
 export type QuizChoice = {
   id: string;
@@ -267,6 +268,17 @@ function buildBattleQuizQuestionsWithWeight(params: BattleQuizParams): WeightedB
       ),
     );
   }
+
+  questions.push(
+    ...pokemonQuizEntries.map((entry) =>
+      makeQuestion(
+        entry.id,
+        entry.prompt,
+        makeChoices(entry.correctAnswer, entry.wrongAnswers),
+        entry.weight,
+      ),
+    ),
+  );
 
   return questions;
 }
