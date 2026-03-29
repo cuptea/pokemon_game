@@ -10,6 +10,7 @@ import {
   t,
 } from "../game/i18n";
 import { createBattleResumeState } from "../game/overworldBattleState";
+import { applyWildVictoryCapture } from "../game/wildCapture";
 import { submitLeaderboardFromCurrentWorldState } from "../services/leaderboard";
 import { getStoryVisualTheme, toHexColor, type StoryVisualTheme } from "../game/storyVisuals";
 import { getTerrainStyle, isWaterTone } from "../game/terrainRender";
@@ -1315,19 +1316,10 @@ export class OverworldScene extends Phaser.Scene {
       const capturedId = result.encounteredCreatureId;
       const creatureName = capturedId ? registry.creatures[capturedId]?.name : "wild creature";
       if (capturedId && registry.creatures[capturedId]) {
-        const alreadyOwned = worldState.ownedCreatureIds.includes(capturedId);
-        if (!alreadyOwned) {
-          worldState.ownedCreatureIds = [...worldState.ownedCreatureIds, capturedId];
-          if (worldState.selectedPartyCreatureIds.length < 3) {
-            worldState.selectedPartyCreatureIds = [
-              ...worldState.selectedPartyCreatureIds,
-              capturedId,
-            ];
-          }
-          worldState.activeCreatureId =
-            worldState.selectedPartyCreatureIds[0] ?? capturedId;
+        const captureResult = applyWildVictoryCapture(worldState, capturedId);
+        if (captureResult.outcome === "captured") {
           this.setMessage(
-            worldState.selectedPartyCreatureIds.includes(capturedId)
+            captureResult.addedToParty
               ? t("overworld.joined_team_added", { name: creatureName })
               : t("overworld.joined_team", { name: creatureName }),
           );
