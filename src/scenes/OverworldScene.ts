@@ -8,6 +8,7 @@ import type {
   EncounterSlot,
   EncounterZone,
   ExitDefinition,
+  Facing,
   InteractablePlacement,
   MapModule,
   NpcPlacement,
@@ -36,6 +37,7 @@ export class OverworldScene extends Phaser.Scene {
     reset: Phaser.Input.Keyboard.Key;
   };
   private player!: Phaser.Physics.Arcade.Sprite;
+  private playerShadow!: Phaser.GameObjects.Ellipse;
   private map!: MapModule;
   private promptText!: Phaser.GameObjects.Text;
   private messageText!: Phaser.GameObjects.Text;
@@ -50,6 +52,8 @@ export class OverworldScene extends Phaser.Scene {
   private statusText!: Phaser.GameObjects.Text;
   private helpPanel!: Phaser.GameObjects.Container;
   private helpVisible = false;
+  private walkCycle = 0;
+  private facing: Facing = "down";
 
   constructor() {
     super("OverworldScene");
@@ -279,6 +283,10 @@ export class OverworldScene extends Phaser.Scene {
   }
 
   private spawnPlayer(x: number, y: number): void {
+    this.playerShadow = this.add
+      .ellipse(x, y + 18, 18, 8, THEME.shadow, 0.28)
+      .setDepth(y - 1);
+
     this.player = this.physics.add.sprite(
       x,
       y,
@@ -299,7 +307,7 @@ export class OverworldScene extends Phaser.Scene {
     }
   }
 
-  private handleMovement(_delta: number): void {
+  private handleMovement(delta: number): void {
     const body = this.player.body as Phaser.Physics.Arcade.Body;
     let targetX = 0;
     let targetY = 0;
@@ -330,7 +338,57 @@ export class OverworldScene extends Phaser.Scene {
       Math.abs(nextVelocityX) < 6 ? 0 : nextVelocityX,
       Math.abs(nextVelocityY) < 6 ? 0 : nextVelocityY,
     );
+    this.updatePlayerAnimation(delta, body.velocity.x, body.velocity.y);
     this.player.setDepth(this.player.y);
+  }
+
+  private updatePlayerAnimation(delta: number, velocityX: number, velocityY: number): void {
+    const moving = Math.abs(velocityX) > 18 || Math.abs(velocityY) > 18;
+    const dominantHorizontal = Math.abs(velocityX) > Math.abs(velocityY);
+
+    if (dominantHorizontal && Math.abs(velocityX) > 8) {
+      this.facing = velocityX < 0 ? "left" : "right";
+      this.player.setFlipX(velocityX < 0);
+    } else if (Math.abs(velocityY) > 8) {
+      this.facing = velocityY < 0 ? "up" : "down";
+    }
+
+    if (!moving) {
+      this.walkCycle = 0;
+      this.player.setAngle(Phaser.Math.Linear(this.player.angle, 0, 0.28));
+      this.player.setScale(
+        Phaser.Math.Linear(this.player.scaleX, 1, 0.24),
+        Phaser.Math.Linear(this.player.scaleY, 1, 0.24),
+      );
+      this.playerShadow
+        .setPosition(this.player.x, this.player.y + 18)
+        .setSize(
+          Phaser.Math.Linear(this.playerShadow.width, 18, 0.22),
+          Phaser.Math.Linear(this.playerShadow.height, 8, 0.22),
+        )
+        .setDepth(this.player.y - 1);
+      return;
+    }
+
+    this.walkCycle += delta * 0.022;
+    const step = Math.sin(this.walkCycle);
+    const stride = Math.abs(step);
+    const angle = dominantHorizontal ? step * 6 : step * 2.2;
+    const scaleX = dominantHorizontal ? 1 + stride * 0.05 : 1 - stride * 0.03;
+    let scaleY = dominantHorizontal ? 1 - stride * 0.05 : 1 + stride * 0.05;
+
+    if (this.facing === "up") {
+      scaleY -= 0.03;
+    } else if (this.facing === "down") {
+      scaleY += 0.02;
+    }
+
+    this.player.setAngle(angle);
+    this.player.setScale(scaleX, scaleY);
+    this.playerShadow
+      .setPosition(this.player.x, this.player.y + 18)
+      .setSize(18 - stride * 2, 8 - stride)
+      .setDepth(this.player.y - 1);
   }
 
   private updateCurrentInteractable(): void {
