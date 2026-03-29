@@ -80,6 +80,9 @@ const TRANSLATIONS: Record<SupportedLanguage, Record<string, string>> = {
     "gameover.journey": "{avatar}'s journey faltered on {route}.",
     "gameover.keep_profile":
       "Your selected hero and difficulty will be kept.\nYour team and route progress will restart from the beginning.",
+    "gameover.leaderboard_title": "Top Trainers",
+    "gameover.leaderboard_loading": "Loading leaderboard...",
+    "gameover.leaderboard_empty": "No leaderboard entries yet. Start a new run and claim the first score.",
     "gameover.press_enter": "PRESS ENTER TO START AGAIN",
     "gameover.space_hint": "Space also restarts the adventure.",
     "gameover.defeat_message":
@@ -329,6 +332,9 @@ const TRANSLATIONS: Record<SupportedLanguage, Record<string, string>> = {
     "gameover.title": "游戏结束",
     "gameover.journey": "{avatar} 的旅程在 {route} 上暂时中断了。",
     "gameover.keep_profile": "你选择的主角与难度会被保留。\n队伍与路线进度会从开头重新开始。",
+    "gameover.leaderboard_title": "排行榜前列",
+    "gameover.leaderboard_loading": "正在加载排行榜……",
+    "gameover.leaderboard_empty": "还没有排行榜记录。开始新冒险，拿下第一分吧。",
     "gameover.press_enter": "按 Enter 重新开始",
     "gameover.space_hint": "按空格也可以重新开始冒险。",
     "gameover.defeat_message":
@@ -567,6 +573,10 @@ const TRANSLATIONS: Record<SupportedLanguage, Record<string, string>> = {
     "gameover.journey": "{avatar}s Reise geriet auf {route} ins Stocken.",
     "gameover.keep_profile":
       "Dein gewaehltet Held und die Schwierigkeit bleiben erhalten.\nTeam und Routenfortschritt beginnen erneut von vorn.",
+    "gameover.leaderboard_title": "Top-Trainer",
+    "gameover.leaderboard_loading": "Rangliste wird geladen...",
+    "gameover.leaderboard_empty":
+      "Noch keine Ranglisten-Eintraege. Starte einen neuen Lauf und sichere dir den ersten Punktestand.",
     "gameover.press_enter": "ENTER DRUECKEN ZUM NEUSTART",
     "gameover.space_hint": "Leertaste startet das Abenteuer ebenfalls neu.",
     "gameover.defeat_message":

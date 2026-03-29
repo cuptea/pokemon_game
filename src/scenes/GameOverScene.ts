@@ -1,9 +1,16 @@
 import Phaser from "phaser";
 import { getAvatarLabel, getLocalizedStorySurface, t } from "../game/i18n";
+import {
+  GAME_OVER_LEADERBOARD_LIMIT,
+  formatGameOverLeaderboard,
+} from "../game/gameOverLeaderboard";
 import { resetAdventurePreservingProfile, worldState } from "../game/worldState";
 import { GAME_FONT } from "../game/theme";
 import { createUiPanel } from "../game/uiSkin";
-import { submitLeaderboardFromCurrentWorldState } from "../services/leaderboard";
+import {
+  fetchLeaderboardEntries,
+  submitLeaderboardFromCurrentWorldState,
+} from "../services/leaderboard";
 
 type GameOverSceneData = {
   message?: string;
@@ -11,6 +18,7 @@ type GameOverSceneData = {
 
 export class GameOverScene extends Phaser.Scene {
   private restartButton!: Phaser.GameObjects.Text;
+  private leaderboardText!: Phaser.GameObjects.Text;
   private message = t("gameover.defeat_message");
   private restarting = false;
 
@@ -27,7 +35,6 @@ export class GameOverScene extends Phaser.Scene {
     const avatarLabel = getAvatarLabel(worldState.selectedAvatar);
 
     this.scene.stop("OverworldScene");
-    void submitLeaderboardFromCurrentWorldState();
     this.cameras.main.setBackgroundColor("#0c0612");
 
     this.add.rectangle(480, 320, 960, 640, 0x120819, 1);
@@ -57,9 +64,9 @@ export class GameOverScene extends Phaser.Scene {
     createUiPanel({
       scene: this,
       x: 150,
-      y: 110,
+      y: 90,
       width: 660,
-      height: 390,
+      height: 430,
       variant: "warm",
       alpha: 1,
       depth: 2,
@@ -111,8 +118,30 @@ export class GameOverScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setDepth(3);
 
+    this.add
+      .text(480, 408, t("gameover.leaderboard_title"), {
+        fontFamily: GAME_FONT,
+        fontSize: "22px",
+        color: "#ffe8a3",
+        fontStyle: "bold",
+      })
+      .setOrigin(0.5)
+      .setDepth(3);
+
+    this.leaderboardText = this.add
+      .text(480, 436, t("gameover.leaderboard_loading"), {
+        fontFamily: GAME_FONT,
+        fontSize: "16px",
+        color: "#d9f0ff",
+        align: "center",
+        wordWrap: { width: 560 },
+        lineSpacing: 6,
+      })
+      .setOrigin(0.5, 0)
+      .setDepth(3);
+
     this.restartButton = this.add
-      .text(480, 448, t("gameover.press_enter"), {
+      .text(480, 544, t("gameover.press_enter"), {
         fontFamily: GAME_FONT,
         fontSize: "26px",
         color: "#08131f",
@@ -124,7 +153,7 @@ export class GameOverScene extends Phaser.Scene {
       .setDepth(3);
 
     this.add
-      .text(480, 504, t("gameover.space_hint"), {
+      .text(480, 590, t("gameover.space_hint"), {
         fontFamily: GAME_FONT,
         fontSize: "16px",
         color: "#d9f0ff",
@@ -144,6 +173,19 @@ export class GameOverScene extends Phaser.Scene {
     const space = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
     enter.on("down", () => this.restartAdventure());
     space.on("down", () => this.restartAdventure());
+
+    void this.loadLeaderboard();
+  }
+
+  private async loadLeaderboard(): Promise<void> {
+    await submitLeaderboardFromCurrentWorldState();
+    const entries = await fetchLeaderboardEntries(GAME_OVER_LEADERBOARD_LIMIT);
+
+    if (!this.sys.isActive()) {
+      return;
+    }
+
+    this.leaderboardText.setText(formatGameOverLeaderboard(entries));
   }
 
   private restartAdventure(): void {
