@@ -37,3 +37,15 @@ export function resetWorldState(): void {
   applyWorldState(worldState, createInitialWorldState());
   saveWorldState();
 }
+
+export function resetAdventurePreservingProfile(): void {
+  const avatar = worldState.selectedAvatar;
+  const difficulty = worldState.selectedDifficulty;
+  const introCompleted = worldState.introCompleted;
+
+  applyWorldState(worldState, createInitialWorldState());
+  worldState.selectedAvatar = avatar;
+  worldState.selectedDifficulty = difficulty;
+  worldState.introCompleted = introCompleted;
+  saveWorldState();
+}

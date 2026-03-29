@@ -1087,6 +1087,13 @@ export class BattleScene extends Phaser.Scene {
     this.time.delayedCall(820, () => {
       this.cameras.main.fadeOut(160, 7, 19, 31);
       this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
+        if (outcome === "lose") {
+          this.scene.start("GameOverScene", {
+            message: "Your battle buddies fell in combat. Regroup, rethink your team, and try the region again.",
+          });
+          return;
+        }
+
         this.game.events.emit("battle-complete", {
           battleId: this.battleId,
           outcome,

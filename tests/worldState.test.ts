@@ -82,6 +82,37 @@ describe("worldState persistence", () => {
     expect(module.worldState.introCompleted).toBe(false);
   });
 
+  it("can reset the adventure while keeping the chosen hero and difficulty", async () => {
+    const fakeWindow = makeWindow();
+    vi.stubGlobal("window", fakeWindow);
+
+    const module = await import("../src/game/worldState");
+
+    module.worldState.currentMapId = "lake_edge_01";
+    module.worldState.currentSpawnId = "dock_return";
+    module.worldState.defeatedBattles.mentorBattle = true;
+    module.worldState.collectedInteractives.town_board = true;
+    module.worldState.ownedCreatureIds = ["spriglet", "mosslet"];
+    module.worldState.selectedPartyCreatureIds = ["mosslet", "spriglet"];
+    module.worldState.activeCreatureId = "mosslet";
+    module.worldState.selectedAvatar = "grove";
+    module.worldState.selectedDifficulty = "heroic";
+    module.worldState.introCompleted = true;
+
+    module.resetAdventurePreservingProfile();
+
+    expect(module.worldState.currentMapId).toBe("mossgrove_town");
+    expect(module.worldState.currentSpawnId).toBe("town_square");
+    expect(module.worldState.defeatedBattles).toEqual({});
+    expect(module.worldState.collectedInteractives).toEqual({});
+    expect(module.worldState.ownedCreatureIds).toEqual(["spriglet"]);
+    expect(module.worldState.selectedPartyCreatureIds).toEqual(["spriglet"]);
+    expect(module.worldState.activeCreatureId).toBe("spriglet");
+    expect(module.worldState.selectedAvatar).toBe("grove");
+    expect(module.worldState.selectedDifficulty).toBe("heroic");
+    expect(module.worldState.introCompleted).toBe(true);
+  });
+
   it("falls back to defaults when avatar or difficulty values are invalid", async () => {
     vi.stubGlobal(
       "window",
