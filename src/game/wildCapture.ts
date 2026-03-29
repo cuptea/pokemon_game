@@ -1,3 +1,4 @@
+import { normalizePartySelection } from "./party";
 import type { WorldState } from "../types/world";
 
 export type WildCaptureResult =
@@ -36,13 +37,11 @@ export function applyWildVictoryCapture(
   }
 
   state.ownedCreatureIds = [...state.ownedCreatureIds, capturedId];
-
-  let addedToParty = false;
-  if (state.selectedPartyCreatureIds.length < 3) {
-    state.selectedPartyCreatureIds = [...state.selectedPartyCreatureIds, capturedId];
-    addedToParty = true;
-  }
-
+  state.selectedPartyCreatureIds = normalizePartySelection(state.ownedCreatureIds, [
+    ...state.selectedPartyCreatureIds,
+    capturedId,
+  ]);
+  const addedToParty = state.selectedPartyCreatureIds.includes(capturedId);
   state.activeCreatureId = state.selectedPartyCreatureIds[0] ?? capturedId;
 
   return {

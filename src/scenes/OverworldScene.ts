@@ -9,8 +9,12 @@ import {
   getLocalizedStorySurface,
   t,
 } from "../game/i18n";
-import { createBattleResumeState } from "../game/overworldBattleState";
+import {
+  createBattleLaunchState,
+  createBattleResumeState,
+} from "../game/overworldBattleState";
 import { applyWildVictoryCapture } from "../game/wildCapture";
+import { shouldRemoveWildRoamerAfterBattle } from "../game/wildRoamerState";
 import { submitLeaderboardFromCurrentWorldState } from "../services/leaderboard";
 import { getStoryVisualTheme, toHexColor, type StoryVisualTheme } from "../game/storyVisuals";
 import { getTerrainStyle, isWaterTone } from "../game/terrainRender";
@@ -105,6 +109,7 @@ export class OverworldScene extends Phaser.Scene {
   private npcActors: NpcActor[] = [];
   private trainerActors: TrainerActor[] = [];
   private wildActors: WildRoamerActor[] = [];
+  private pendingWildBattleActorId?: string;
 
   constructor() {
     super("OverworldScene");
@@ -1166,7 +1171,9 @@ export class OverworldScene extends Phaser.Scene {
       return;
     }
 
-    this.transitionLocked = true;
+    const battleLaunchState = createBattleLaunchState();
+    this.transitionLocked = battleLaunchState.transitionLocked;
+    this.awaitingBattleResume = battleLaunchState.awaitingBattleResume;
     this.player.setVelocity(0, 0);
     this.setMessage(
       t("overworld.wild_appears", {
@@ -1264,8 +1271,9 @@ export class OverworldScene extends Phaser.Scene {
       return;
     }
 
-    this.transitionLocked = true;
-    this.awaitingBattleResume = true;
+    const battleLaunchState = createBattleLaunchState();
+    this.transitionLocked = battleLaunchState.transitionLocked;
+    this.awaitingBattleResume = battleLaunchState.awaitingBattleResume;
     this.player.setVelocity(0, 0);
     this.cameras.main.fadeOut(160, 8, 19, 31);
     this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
@@ -1282,12 +1290,10 @@ export class OverworldScene extends Phaser.Scene {
       return;
     }
 
-    this.wildActors = this.wildActors.filter((wildActor) => wildActor.id !== actor.id);
-    actor.moveTween?.stop();
-    actor.sprite.destroy();
-
-    this.transitionLocked = true;
-    this.awaitingBattleResume = true;
+    const battleLaunchState = createBattleLaunchState();
+    this.transitionLocked = battleLaunchState.transitionLocked;
+    this.awaitingBattleResume = battleLaunchState.awaitingBattleResume;
+    this.pendingWildBattleActorId = actor.id;
     this.player.setVelocity(0, 0);
     this.setMessage(
       t("overworld.wild_appears", {
@@ -1305,6 +1311,10 @@ export class OverworldScene extends Phaser.Scene {
   }
 
   private handleBattleComplete(result: BattleResult): void {
+    if (result.source === "wild") {
+      this.resolvePendingWildRoamer(result.outcome);
+    }
+
     if (result.source === "trainer" && result.outcome === "win" && result.battleId) {
       worldState.defeatedBattles[result.battleId] = true;
       const reward = registry.trainerBattles[result.battleId]?.reward;
@@ -1357,6 +1367,24 @@ export class OverworldScene extends Phaser.Scene {
     if (resumeState.shouldFadeIn) {
       this.cameras.main.fadeIn(220, 8, 19, 31);
     }
+  }
+
+  private resolvePendingWildRoamer(outcome: BattleResult["outcome"]): void {
+    if (!this.pendingWildBattleActorId) {
+      return;
+    }
+
+    const pendingActorId = this.pendingWildBattleActorId;
+    this.pendingWildBattleActorId = undefined;
+
+    if (!shouldRemoveWildRoamerAfterBattle(outcome)) {
+      return;
+    }
+
+    const actor = this.wildActors.find((wildActor) => wildActor.id === pendingActorId);
+    actor?.moveTween?.stop();
+    actor?.sprite.destroy();
+    this.wildActors = this.wildActors.filter((wildActor) => wildActor.id !== pendingActorId);
   }
 
   private setMessage(message: string): void {
