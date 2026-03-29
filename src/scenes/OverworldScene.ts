@@ -252,6 +252,10 @@ export class OverworldScene extends Phaser.Scene {
         .setDepth(decoration.y);
     }
 
+    for (const exit of this.map.exits) {
+      this.drawExitMarker(exit);
+    }
+
     for (const worldItem of this.map.interactives) {
       if (worldItem.once && worldState.collectedInteractives[worldItem.id]) {
         continue;
@@ -776,6 +780,102 @@ export class OverworldScene extends Phaser.Scene {
       angle: 1.5,
       duration: 580,
       delay,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
+    });
+  }
+
+  private drawExitMarker(exit: ExitDefinition): void {
+    const centerX = exit.x + exit.width / 2;
+    const centerY = exit.y + exit.height / 2;
+    const borderExit =
+      exit.x <= 52 ||
+      exit.y <= 52 ||
+      exit.x + exit.width >= this.map.width - 52 ||
+      exit.y + exit.height >= this.map.height - 52;
+
+    const threshold = this.add
+      .rectangle(
+        centerX,
+        centerY,
+        Math.max(26, exit.width),
+        Math.max(24, exit.height),
+        borderExit ? 0x2b6cb0 : 0xb08968,
+        borderExit ? 0.28 : 0.36,
+      )
+      .setStrokeStyle(2, borderExit ? 0xd9f0ff : 0xf6bd60, 0.95)
+      .setDepth(centerY - 3);
+
+    const highlight = this.add
+      .rectangle(
+        centerX,
+        centerY,
+        Math.max(18, exit.width - 12),
+        Math.max(14, exit.height - 12),
+        borderExit ? 0x84dcc6 : 0xffe8a3,
+        borderExit ? 0.24 : 0.28,
+      )
+      .setDepth(centerY - 2);
+
+    this.tweens.add({
+      targets: [threshold, highlight],
+      alpha: { from: borderExit ? 0.3 : 0.4, to: borderExit ? 0.62 : 0.74 },
+      duration: 820,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
+    });
+
+    if (borderExit) {
+      const arrow = this.add
+        .text(centerX, centerY - Math.max(26, exit.height) / 2 - 8, "EXIT", {
+          fontFamily: GAME_FONT,
+          fontSize: "14px",
+          color: "#f8f9fa",
+          backgroundColor: "#17304b",
+          padding: { x: 8, y: 4 },
+          fontStyle: "bold",
+        })
+        .setOrigin(0.5)
+        .setDepth(centerY - 8);
+
+      this.tweens.add({
+        targets: arrow,
+        y: arrow.y - 6,
+        duration: 700,
+        yoyo: true,
+        repeat: -1,
+        ease: "Sine.easeInOut",
+      });
+      return;
+    }
+
+    const lintel = this.add
+      .rectangle(centerX, exit.y - 8, Math.max(40, exit.width + 12), 8, 0xf6bd60, 0.95)
+      .setDepth(exit.y - 7);
+    const sideLeft = this.add
+      .rectangle(exit.x - 4, centerY, 8, Math.max(26, exit.height + 10), 0x7f5539, 0.92)
+      .setDepth(centerY - 4);
+    const sideRight = this.add
+      .rectangle(exit.x + exit.width + 4, centerY, 8, Math.max(26, exit.height + 10), 0x7f5539, 0.92)
+      .setDepth(centerY - 4);
+    const doorLabel = this.add
+      .text(centerX, exit.y - 24, "DOOR", {
+        fontFamily: GAME_FONT,
+        fontSize: "13px",
+        color: "#08131f",
+        backgroundColor: "#ffe066",
+        padding: { x: 6, y: 3 },
+        fontStyle: "bold",
+      })
+      .setOrigin(0.5)
+      .setDepth(exit.y - 10);
+
+    this.tweens.add({
+      targets: [lintel, sideLeft, sideRight, doorLabel],
+      alpha: { from: 0.72, to: 1 },
+      duration: 900,
       yoyo: true,
       repeat: -1,
       ease: "Sine.easeInOut",
