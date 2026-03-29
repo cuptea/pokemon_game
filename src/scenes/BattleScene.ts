@@ -165,6 +165,14 @@ export class BattleScene extends Phaser.Scene {
     createUiPanel({
       scene: this,
       x: 518,
+      y: 228,
+      width: 300,
+      height: 166,
+      variant: "cool",
+    });
+    createUiPanel({
+      scene: this,
+      x: 518,
       y: 440,
       width: 300,
       height: 140,
@@ -235,6 +243,25 @@ export class BattleScene extends Phaser.Scene {
     this.playerBar = this.add
       .rectangle(52, 534, 236, 18, THEME.accentAlt)
       .setOrigin(0, 0.5);
+    this.add.text(528, 244, "QUESTION", {
+      fontFamily: GAME_FONT,
+      fontSize: "14px",
+      color: THEME.textMuted,
+      fontStyle: "bold",
+    });
+    this.quizHintText = this.add.text(
+      528,
+      268,
+      "Press START QUIZ ATTACK or tap Q to reveal the current question.",
+      {
+        fontFamily: GAME_FONT,
+        fontSize: "18px",
+        color: THEME.text,
+        fontStyle: "bold",
+        wordWrap: { width: 272 },
+        lineSpacing: 6,
+      },
+    );
     this.add.rectangle(528, 430, 250, 10, 0x30475e, 0.9).setOrigin(0, 0.5);
     this.quizTimerFill = this.add
       .rectangle(528, 430, 250, 10, THEME.accentAlt, 1)
@@ -252,12 +279,6 @@ export class BattleScene extends Phaser.Scene {
       fontFamily: GAME_FONT,
       fontSize: "14px",
       color: "#ffe8a3",
-      fontStyle: "bold",
-    });
-    this.quizHintText = this.add.text(528, 388, "Press QUIZ ATTACK or tap Q to open the question.", {
-      fontFamily: GAME_FONT,
-      fontSize: "15px",
-      color: THEME.textMuted,
       fontStyle: "bold",
     });
 
@@ -446,6 +467,7 @@ export class BattleScene extends Phaser.Scene {
     this.setQuizButtonsVisible(false);
     this.quizTimerFill.displayWidth = 250;
     this.quizTimerText.setText("");
+    this.quizHintText.setText("Press START QUIZ ATTACK or tap Q to reveal the current question.");
     this.quizStartedAt = 0;
     this.quizTimeLimitMs = 0;
   }
@@ -479,8 +501,9 @@ export class BattleScene extends Phaser.Scene {
       this.quizStreak > 1 ? `Quiz Attack x${this.quizStreak}` : "Quiz Attack",
       THEME.accentAlt,
     );
+    this.quizHintText.setText(this.currentQuiz.prompt);
     this.infoText.setText(
-      `${this.currentQuiz.prompt}\nPress 1, 2, or 3, or click an answer before time runs out.${this.quizStreak > 0 ? ` Streak: ${this.quizStreak}.` : ""}`,
+      `Press 1, 2, or 3, or click an answer before time runs out.${this.quizStreak > 0 ? ` Streak: ${this.quizStreak}.` : ""}`,
     );
     this.currentQuiz.choices.forEach((choice, index) => {
       this.quizButtons[index].setText(`${index + 1}. ${choice.label}`);
