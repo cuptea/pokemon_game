@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { registry } from "../data/registry";
-import { worldState } from "../game/worldState";
+import { resetWorldState, saveWorldState, worldState } from "../game/worldState";
 import { GAME_FONT, THEME } from "../game/theme";
 import type {
   BattleResult,
@@ -31,6 +31,8 @@ export class OverworldScene extends Phaser.Scene {
     left: Phaser.Input.Keyboard.Key;
     right: Phaser.Input.Keyboard.Key;
     interact: Phaser.Input.Keyboard.Key;
+    help: Phaser.Input.Keyboard.Key;
+    reset: Phaser.Input.Keyboard.Key;
   };
   private player!: Phaser.Physics.Arcade.Sprite;
   private map!: MapModule;
@@ -44,6 +46,9 @@ export class OverworldScene extends Phaser.Scene {
   private transitionLocked = false;
   private encounterTravel = 0;
   private lastPlayerPosition = new Phaser.Math.Vector2();
+  private statusText!: Phaser.GameObjects.Text;
+  private helpPanel!: Phaser.GameObjects.Container;
+  private helpVisible = false;
 
   constructor() {
     super("OverworldScene");
@@ -60,6 +65,15 @@ export class OverworldScene extends Phaser.Scene {
   }
 
   update(_time: number, delta: number): void {
+    if (Phaser.Input.Keyboard.JustDown(this.keys.help)) {
+      this.toggleHelp();
+    }
+
+    if (Phaser.Input.Keyboard.JustDown(this.keys.reset)) {
+      this.resetProgress();
+      return;
+    }
+
     this.handleMovement(delta);
     this.updateCurrentInteractable();
     this.updateEncounterState();
@@ -86,6 +100,8 @@ export class OverworldScene extends Phaser.Scene {
       left: Phaser.Input.Keyboard.KeyCodes.A,
       right: Phaser.Input.Keyboard.KeyCodes.D,
       interact: Phaser.Input.Keyboard.KeyCodes.E,
+      help: Phaser.Input.Keyboard.KeyCodes.H,
+      reset: Phaser.Input.Keyboard.KeyCodes.R,
     }) as OverworldScene["keys"];
   }
 
@@ -106,6 +122,8 @@ export class OverworldScene extends Phaser.Scene {
     this.encounterTravel = 0;
     this.areaText.setText(this.map.title);
     this.setMessage(`You arrived in ${this.map.title}.`);
+    this.refreshStatus();
+    saveWorldState();
 
     if (initial) {
       this.cameras.main.fadeIn(240, 8, 19, 31);
@@ -129,11 +147,22 @@ export class OverworldScene extends Phaser.Scene {
 
     this.createPanel(width - 48, 60, 24, 88, THEME.promptFill, THEME.panelStroke, 0.88);
     this.hudText = this.add
-      .text(40, 102, "Arrow keys or WASD to move. Press E to interact.", {
+      .text(40, 102, "Arrow keys/WASD move. E interacts. H opens help. R resets progress.", {
         fontFamily: GAME_FONT,
         fontSize: "17px",
         color: THEME.textMuted,
         wordWrap: { width: width - 90 },
+      })
+      .setScrollFactor(0)
+      .setDepth(30);
+
+    this.createPanel(250, 108, width - 274, 18, THEME.promptFill, THEME.panelStroke, 0.9);
+    this.statusText = this.add
+      .text(width - 258, 32, "", {
+        fontFamily: GAME_FONT,
+        fontSize: "16px",
+        color: THEME.textMuted,
+        wordWrap: { width: 220 },
       })
       .setScrollFactor(0)
       .setDepth(30);
@@ -160,6 +189,8 @@ export class OverworldScene extends Phaser.Scene {
       })
       .setScrollFactor(0)
       .setDepth(30);
+
+    this.helpPanel = this.createHelpPanel(width, height);
   }
 
   private createPanel(
@@ -446,6 +477,7 @@ export class OverworldScene extends Phaser.Scene {
 
       if (worldItem.once && !collected) {
         worldState.collectedInteractives[worldItem.id] = true;
+        saveWorldState();
         this.time.delayedCall(120, () => this.loadCurrentMap());
       }
       return;
@@ -483,6 +515,7 @@ export class OverworldScene extends Phaser.Scene {
     this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
       worldState.currentMapId = exit.targetMapId;
       worldState.currentSpawnId = exit.targetSpawnId;
+      saveWorldState();
       this.loadCurrentMap();
       this.cameras.main.fadeIn(220, 8, 19, 31);
       this.time.delayedCall(240, () => {
@@ -519,6 +552,7 @@ export class OverworldScene extends Phaser.Scene {
       if (reward) {
         this.setMessage(reward);
       }
+      saveWorldState();
     } else if (result.source === "wild" && result.outcome === "win") {
       const creatureName = result.encounteredCreatureId
         ? registry.creatures[result.encounteredCreatureId]?.name
@@ -531,10 +565,80 @@ export class OverworldScene extends Phaser.Scene {
     }
     this.lastPlayerPosition.set(this.player.x, this.player.y);
     this.encounterTravel = 0;
+    this.refreshStatus();
   }
 
   private setMessage(message: string): void {
     this.messageText.setText(message);
+  }
+
+  private refreshStatus(): void {
+    const defeatedCount = Object.keys(worldState.defeatedBattles).length;
+    const collectedCount = Object.keys(worldState.collectedInteractives).length;
+    this.statusText.setText(
+      `Map: ${this.map.title}\nVictories: ${defeatedCount}\nDiscoveries: ${collectedCount}`,
+    );
+  }
+
+  private createHelpPanel(width: number, height: number): Phaser.GameObjects.Container {
+    const panelWidth = 520;
+    const panelHeight = 260;
+    const panel = this.add.container(width / 2, height / 2).setScrollFactor(0).setDepth(40);
+
+    const backdrop = this.add
+      .rectangle(0, 0, panelWidth, panelHeight, THEME.battleFill, 0.96)
+      .setStrokeStyle(3, THEME.panelStroke);
+    const title = this.add.text(-panelWidth / 2 + 24, -panelHeight / 2 + 20, "Field Guide", {
+      fontFamily: GAME_FONT,
+      fontSize: "28px",
+      color: THEME.text,
+      fontStyle: "bold",
+    });
+    const body = this.add.text(
+      -panelWidth / 2 + 24,
+      -panelHeight / 2 + 66,
+      [
+        "Move: Arrow keys or WASD",
+        "Interact: E",
+        "Help: H",
+        "Reset progress: R",
+        "",
+        "Goal: clear trainer battles, find route clues, and explore the hidden grove, lake edge, town house, and forest path.",
+        "",
+        `Asset direction: ${Object.values({ ...registry.maps }).length} maps are ready for a CC0-first art swap.`,
+      ].join("\n"),
+      {
+        fontFamily: GAME_FONT,
+        fontSize: "18px",
+        color: THEME.textMuted,
+        wordWrap: { width: panelWidth - 48 },
+      },
+    );
+
+    panel.add([backdrop, title, body]);
+    panel.setVisible(false);
+    return panel;
+  }
+
+  private toggleHelp(): void {
+    this.helpVisible = !this.helpVisible;
+    this.helpPanel.setVisible(this.helpVisible);
+    this.interactionLockedUntil = this.time.now + 120;
+    if (this.helpVisible) {
+      this.player.setVelocity(0, 0);
+    }
+  }
+
+  private resetProgress(): void {
+    resetWorldState();
+    this.helpVisible = false;
+    if (this.helpPanel) {
+      this.helpPanel.setVisible(false);
+    }
+    this.transitionLocked = false;
+    this.interactionLockedUntil = this.time.now + 180;
+    this.loadCurrentMap();
+    this.setMessage("Progress reset. Mossgrove Town is fresh again.");
   }
 
   private rollEncounter(zone: EncounterZone) {

@@ -1,8 +1,52 @@
 import type { WorldState } from "../types/world";
 
-export const worldState: WorldState = {
+const STORAGE_KEY = "pokemon_game_world_state_v1";
+
+const initialState = (): WorldState => ({
   currentMapId: "mossgrove_town",
   currentSpawnId: "town_square",
   defeatedBattles: {},
   collectedInteractives: {},
-};
+});
+
+export const worldState: WorldState = loadWorldState();
+
+export function loadWorldState(): WorldState {
+  if (typeof window === "undefined") {
+    return initialState();
+  }
+
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      return initialState();
+    }
+
+    const parsed = JSON.parse(raw) as Partial<WorldState>;
+    return {
+      currentMapId: parsed.currentMapId ?? "mossgrove_town",
+      currentSpawnId: parsed.currentSpawnId ?? "town_square",
+      defeatedBattles: parsed.defeatedBattles ?? {},
+      collectedInteractives: parsed.collectedInteractives ?? {},
+    };
+  } catch {
+    return initialState();
+  }
+}
+
+export function saveWorldState(): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(worldState));
+}
+
+export function resetWorldState(): void {
+  const fresh = initialState();
+  worldState.currentMapId = fresh.currentMapId;
+  worldState.currentSpawnId = fresh.currentSpawnId;
+  worldState.defeatedBattles = fresh.defeatedBattles;
+  worldState.collectedInteractives = fresh.collectedInteractives;
+  saveWorldState();
+}
