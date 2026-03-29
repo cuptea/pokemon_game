@@ -47,10 +47,12 @@ export class BattleScene extends Phaser.Scene {
   private runButton!: Phaser.GameObjects.Text;
   private quizButtons: Phaser.GameObjects.Text[] = [];
   private quizHotkeys!: {
+    quiz: Phaser.Input.Keyboard.Key;
     one: Phaser.Input.Keyboard.Key;
     two: Phaser.Input.Keyboard.Key;
     three: Phaser.Input.Keyboard.Key;
   };
+  private quizHintText!: Phaser.GameObjects.Text;
   private bannerText!: Phaser.GameObjects.Text;
   private playerBar!: Phaser.GameObjects.Rectangle;
   private enemyBar!: Phaser.GameObjects.Rectangle;
@@ -252,6 +254,12 @@ export class BattleScene extends Phaser.Scene {
       color: "#ffe8a3",
       fontStyle: "bold",
     });
+    this.quizHintText = this.add.text(528, 388, "Press QUIZ ATTACK or tap Q to open the question.", {
+      fontFamily: GAME_FONT,
+      fontSize: "15px",
+      color: THEME.textMuted,
+      fontStyle: "bold",
+    });
 
     createUiPanel({
       scene: this,
@@ -271,7 +279,7 @@ export class BattleScene extends Phaser.Scene {
     this.attackButton = this.createActionButton(
       570,
       472,
-      "Quiz Attack",
+      "Start Quiz Attack",
       () => this.beginQuizTurn(),
     );
     this.runButton = this.createActionButton(570, 520, "Run", () =>
@@ -284,10 +292,12 @@ export class BattleScene extends Phaser.Scene {
     ];
     this.setQuizButtonsVisible(false);
     this.quizHotkeys = this.input.keyboard!.addKeys({
+      quiz: Phaser.Input.Keyboard.KeyCodes.Q,
       one: Phaser.Input.Keyboard.KeyCodes.ONE,
       two: Phaser.Input.Keyboard.KeyCodes.TWO,
       three: Phaser.Input.Keyboard.KeyCodes.THREE,
     }) as BattleScene["quizHotkeys"];
+    this.quizHotkeys.quiz.on("down", () => this.beginQuizTurn());
     this.quizHotkeys.one.on("down", () => this.answerQuiz(0));
     this.quizHotkeys.two.on("down", () => this.answerQuiz(1));
     this.quizHotkeys.three.on("down", () => this.answerQuiz(2));
@@ -300,8 +310,8 @@ export class BattleScene extends Phaser.Scene {
     this.setBanner(this.introText, THEME.accent);
     this.infoText.setText(
       this.battleSource === "wild"
-        ? `${this.currentEnemy.name} blocks the path. Choose your moment.`
-        : `Trainer sends out ${this.currentEnemy.name}. Choose your moment.`,
+        ? `${this.currentEnemy.name} blocks the path. Press START QUIZ ATTACK to open the question.`
+        : `Trainer sends out ${this.currentEnemy.name}. Press START QUIZ ATTACK to open the question.`,
     );
 
     this.time.delayedCall(850, () => {
@@ -408,9 +418,11 @@ export class BattleScene extends Phaser.Scene {
     this.actionLocked = !enabled;
     this.attackButton.setAlpha(enabled ? 1 : 0.6);
     this.runButton.setAlpha(enabled ? 1 : 0.6);
+    this.quizHintText.setAlpha(enabled ? 0.95 : 0.45);
     if (enabled) {
       this.attackButton.setVisible(true);
       this.runButton.setVisible(true);
+      this.quizHintText.setVisible(true);
     }
   }
 
@@ -421,6 +433,7 @@ export class BattleScene extends Phaser.Scene {
     }
     this.quizTimerFill.setVisible(visible);
     this.quizTimerText.setVisible(visible);
+    this.quizHintText.setVisible(!visible);
   }
 
   private clearQuizState(): void {
