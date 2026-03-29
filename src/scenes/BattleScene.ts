@@ -80,6 +80,7 @@ export class BattleScene extends Phaser.Scene {
   create(): void {
     this.cameras.main.fadeIn(120, 7, 19, 31);
 
+    this.add.image(480, 320, "battle_bg");
     this.add
       .rectangle(480, 320, 960, 640, THEME.battleFill, 0.96)
       .setStrokeStyle(4, THEME.panelStroke);

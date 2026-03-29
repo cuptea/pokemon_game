@@ -33,14 +33,9 @@ export class StartScene extends Phaser.Scene {
   }
 
   private drawBackdrop(): void {
+    this.add.image(480, 320, "title_bg");
     const graphics = this.add.graphics();
-    graphics.fillStyle(0x120f1f, 1);
-    graphics.fillRect(0, 0, 960, 640);
-    graphics.fillStyle(0x241b36, 1);
-    for (let x = 0; x < 960; x += 48) {
-      graphics.fillRect(x, 0, 24, 640);
-    }
-    graphics.fillStyle(0x2e294e, 1);
+    graphics.fillStyle(0x0b1320, 0.48);
     graphics.fillRect(60, 60, 840, 520);
     graphics.lineStyle(6, 0xf6bd60, 1);
     graphics.strokeRect(60, 60, 840, 520);
@@ -94,7 +89,7 @@ export class StartScene extends Phaser.Scene {
       const info = PLAYER_AVATARS[avatar];
       const panel = this.add.container(200 + index * 220, 330);
       const card = this.add.rectangle(0, 0, 180, 180, 0x1c2541, 0.96).setStrokeStyle(4, 0x5bc0be);
-      const portrait = this.add.image(0, -12, info.textureKey).setScale(4.2);
+      const portrait = this.add.image(0, -6, info.textureKey).setScale(2.8);
       const label = this.add.text(0, 64, info.label, {
         fontFamily: GAME_FONT,
         fontSize: "24px",
