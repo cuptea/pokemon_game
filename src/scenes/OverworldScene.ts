@@ -9,6 +9,7 @@ import {
   getLocalizedStorySurface,
   t,
 } from "../game/i18n";
+import { createBattleResumeState } from "../game/overworldBattleState";
 import { submitLeaderboardFromCurrentWorldState } from "../services/leaderboard";
 import { getStoryVisualTheme, toHexColor, type StoryVisualTheme } from "../game/storyVisuals";
 import { getTerrainStyle, isWaterTone } from "../game/terrainRender";
@@ -92,6 +93,7 @@ export class OverworldScene extends Phaser.Scene {
   private encounterZone: EncounterZone | null = null;
   private interactionLockedUntil = 0;
   private transitionLocked = false;
+  private awaitingBattleResume = false;
   private encounterTravel = 0;
   private lastPlayerPosition = new Phaser.Math.Vector2();
   private statusText!: Phaser.GameObjects.Text;
@@ -113,9 +115,11 @@ export class OverworldScene extends Phaser.Scene {
 
     this.game.events.on("battle-complete", this.handleBattleComplete, this);
     this.game.events.on("party-updated", this.handlePartyUpdated, this);
+    this.events.on(Phaser.Scenes.Events.RESUME, this.handleSceneResume, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.game.events.off("battle-complete", this.handleBattleComplete, this);
       this.game.events.off("party-updated", this.handlePartyUpdated, this);
+      this.events.off(Phaser.Scenes.Events.RESUME, this.handleSceneResume, this);
     });
   }
 
@@ -1260,6 +1264,7 @@ export class OverworldScene extends Phaser.Scene {
     }
 
     this.transitionLocked = true;
+    this.awaitingBattleResume = true;
     this.player.setVelocity(0, 0);
     this.cameras.main.fadeOut(160, 8, 19, 31);
     this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
@@ -1281,6 +1286,7 @@ export class OverworldScene extends Phaser.Scene {
     actor.sprite.destroy();
 
     this.transitionLocked = true;
+    this.awaitingBattleResume = true;
     this.player.setVelocity(0, 0);
     this.setMessage(
       t("overworld.wild_appears", {
@@ -1298,9 +1304,6 @@ export class OverworldScene extends Phaser.Scene {
   }
 
   private handleBattleComplete(result: BattleResult): void {
-    this.transitionLocked = false;
-    this.cameras.main.fadeIn(220, 8, 19, 31);
-
     if (result.source === "trainer" && result.outcome === "win" && result.battleId) {
       worldState.defeatedBattles[result.battleId] = true;
       const reward = registry.trainerBattles[result.battleId]?.reward;
@@ -1345,6 +1348,22 @@ export class OverworldScene extends Phaser.Scene {
     this.refreshStatus();
     if (result.outcome === "win") {
       void submitLeaderboardFromCurrentWorldState();
+    }
+  }
+
+  private handleSceneResume(): void {
+    if (!this.awaitingBattleResume) {
+      return;
+    }
+
+    const resumeState = createBattleResumeState(this.time.now);
+    this.awaitingBattleResume = resumeState.awaitingBattleResume;
+    this.transitionLocked = resumeState.transitionLocked;
+    this.interactionLockedUntil = resumeState.interactionLockedUntil;
+    this.player.setVelocity(0, 0);
+
+    if (resumeState.shouldFadeIn) {
+      this.cameras.main.fadeIn(220, 8, 19, 31);
     }
   }
 

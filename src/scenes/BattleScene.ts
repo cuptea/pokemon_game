@@ -1150,7 +1150,7 @@ export class BattleScene extends Phaser.Scene {
               });
             },
             resumeOverworld: () => {
-              this.scene.resume("OverworldScene");
+              this.scene.run("OverworldScene");
             },
             emitBattleComplete: (result) => {
               this.game.events.emit("battle-complete", result);
