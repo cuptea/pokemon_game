@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { pickBattleQuizQuestion, type BattleQuizQuestion } from "../data/quiz";
 import { registry } from "../data/registry";
 import { DIFFICULTY_RULES, GAME_FONT, THEME } from "../game/theme";
 import { worldState } from "../game/worldState";
@@ -37,6 +38,7 @@ export class BattleScene extends Phaser.Scene {
   private enemyHpText!: Phaser.GameObjects.Text;
   private attackButton!: Phaser.GameObjects.Text;
   private runButton!: Phaser.GameObjects.Text;
+  private quizButtons: Phaser.GameObjects.Text[] = [];
   private bannerText!: Phaser.GameObjects.Text;
   private playerBar!: Phaser.GameObjects.Rectangle;
   private enemyBar!: Phaser.GameObjects.Rectangle;
@@ -48,6 +50,7 @@ export class BattleScene extends Phaser.Scene {
   private introText = "";
   private rewardText = "";
   private encounteredCreatureId?: string;
+  private currentQuiz: BattleQuizQuestion | null = null;
 
   constructor() {
     super("BattleScene");
@@ -191,12 +194,18 @@ export class BattleScene extends Phaser.Scene {
     this.attackButton = this.createActionButton(
       570,
       472,
-      `Attack with ${this.player.moveName}`,
-      () => this.takeTurn(),
+      "Quiz Attack",
+      () => this.beginQuizTurn(),
     );
     this.runButton = this.createActionButton(570, 520, "Run", () =>
       this.finishBattle("escape"),
     );
+    this.quizButtons = [
+      this.createActionButton(528, 448, "", () => this.answerQuiz(0), 250),
+      this.createActionButton(528, 496, "", () => this.answerQuiz(1), 250),
+      this.createActionButton(528, 544, "", () => this.answerQuiz(2), 250),
+    ];
+    this.setQuizButtonsVisible(false);
 
     this.refreshEnemySprite();
     this.refreshHud();
@@ -221,6 +230,7 @@ export class BattleScene extends Phaser.Scene {
     y: number,
     label: string,
     onClick: () => void,
+    fixedWidth?: number,
   ): Phaser.GameObjects.Text {
     const button = this.add
       .text(x, y, label, {
@@ -230,6 +240,8 @@ export class BattleScene extends Phaser.Scene {
         backgroundColor: "#f6bd60",
         padding: { x: 16, y: 10 },
         fontStyle: "bold",
+        align: "center",
+        fixedWidth,
       })
       .setInteractive({ useHandCursor: true });
     button.setStroke("#fff3bf", 2);
@@ -261,18 +273,69 @@ export class BattleScene extends Phaser.Scene {
     this.actionLocked = !enabled;
     this.attackButton.setAlpha(enabled ? 1 : 0.6);
     this.runButton.setAlpha(enabled ? 1 : 0.6);
+    if (enabled) {
+      this.attackButton.setVisible(true);
+      this.runButton.setVisible(true);
+    }
   }
 
-  private takeTurn(): void {
+  private setQuizButtonsVisible(visible: boolean): void {
+    for (const button of this.quizButtons) {
+      button.setVisible(visible);
+      button.setAlpha(visible ? 1 : 0);
+    }
+  }
+
+  private beginQuizTurn(): void {
     if (this.resolved || this.actionLocked) {
       return;
     }
 
     this.setActionButtonsEnabled(false);
+    this.attackButton.setVisible(false);
+    this.runButton.setVisible(false);
+    this.currentQuiz = pickBattleQuizQuestion({
+      battleSource: this.battleSource,
+      playerMoveName: this.player.moveName,
+      enemyCreatureId: this.currentEnemy.id,
+    });
+    this.setBanner("Quiz Attack", THEME.accentAlt);
+    this.infoText.setText(this.currentQuiz.prompt);
+    this.currentQuiz.choices.forEach((choice, index) => {
+      this.quizButtons[index].setText(choice.label);
+    });
+    this.setQuizButtonsVisible(true);
+    this.actionLocked = false;
+  }
 
-    const playerDamage = this.calculateDamage(this.player, this.currentEnemy);
+  private answerQuiz(index: number): void {
+    if (this.resolved || this.actionLocked || !this.currentQuiz) {
+      return;
+    }
+
+    this.actionLocked = true;
+    this.setQuizButtonsVisible(false);
+    const choice = this.currentQuiz.choices[index];
+    const correct = choice?.isCorrect ?? false;
+    this.currentQuiz = null;
+
+    if (!correct) {
+      this.setBanner("Missed Answer", THEME.danger);
+      this.infoText.setText(
+        `Wrong answer. ${this.currentEnemy.name} takes the opening and strikes first.`,
+      );
+      this.time.delayedCall(380, () => this.resolveEnemyTurn(0, true));
+      return;
+    }
+
+    this.setBanner("Correct Answer", THEME.success);
+    const baseDamage = this.calculateDamage(this.player, this.currentEnemy);
+    const bonusDamage = Math.max(2, Math.round(this.player.movePower * 0.35));
+    const playerDamage = baseDamage + bonusDamage;
     this.currentEnemy.hp = Math.max(0, this.currentEnemy.hp - playerDamage);
-    this.infoText.setText(`${this.player.name} used ${this.player.moveName}.`);
+    this.infoText.setText(
+      `${this.player.name} answered correctly and used ${this.player.moveName} for ${playerDamage} damage.`,
+    );
     this.animateImpact(this.enemySprite, playerDamage, THEME.accent, () => {
       this.tweenHpBar(this.enemyBar, this.currentEnemy.hp / this.currentEnemy.maxHp);
       this.refreshHud();
@@ -282,15 +345,17 @@ export class BattleScene extends Phaser.Scene {
         return;
       }
 
-      this.time.delayedCall(420, () => this.resolveEnemyTurn(playerDamage));
+      this.time.delayedCall(420, () => this.resolveEnemyTurn(playerDamage, false));
     });
   }
 
-  private resolveEnemyTurn(playerDamage: number): void {
-    const enemyDamage = this.calculateDamage(this.currentEnemy, this.player);
+  private resolveEnemyTurn(playerDamage: number, punished = false): void {
+    const enemyDamage = this.calculateDamage(this.currentEnemy, this.player) + (punished ? 2 : 0);
     this.player.hp = Math.max(0, this.player.hp - enemyDamage);
     this.infoText.setText(
-      `${this.player.name} dealt ${playerDamage}. ${this.currentEnemy.name} answered with ${this.currentEnemy.moveName}.`,
+      punished
+        ? `${this.currentEnemy.name} punishes the missed quiz with ${this.currentEnemy.moveName} for ${enemyDamage} damage.`
+        : `${this.player.name} dealt ${playerDamage}. ${this.currentEnemy.name} answered with ${this.currentEnemy.moveName}.`,
     );
 
     this.animateImpact(this.playerSprite, enemyDamage, THEME.danger, () => {
@@ -303,7 +368,7 @@ export class BattleScene extends Phaser.Scene {
       }
 
       this.time.delayedCall(260, () => {
-        this.setBanner(`Your move against ${this.currentEnemy.name}`, THEME.accentAlt);
+        this.setBanner(`Quiz your move against ${this.currentEnemy.name}`, THEME.accentAlt);
         this.setActionButtonsEnabled(true);
       });
     });
@@ -330,7 +395,11 @@ export class BattleScene extends Phaser.Scene {
             ? `${faintedName} fainted. Another wild creature lunges forward.`
             : `${faintedName} fainted. ${this.currentEnemy.name} steps into battle.`,
         );
-        this.time.delayedCall(700, () => this.setActionButtonsEnabled(true));
+        this.time.delayedCall(700, () => {
+          this.attackButton.setVisible(true);
+          this.runButton.setVisible(true);
+          this.setActionButtonsEnabled(true);
+        });
       } else {
         this.infoText.setText(
           this.battleSource === "wild"
@@ -433,7 +502,7 @@ export class BattleScene extends Phaser.Scene {
       `${this.currentEnemy.name}  Lv ${this.currentEnemy.level}\nHP ${this.currentEnemy.hp}/${this.currentEnemy.maxHp}\nParty ${this.enemyIndex + 1}/${this.enemyParty.length}`,
     );
     this.playerHpText.setText(
-      `${this.player.name}  Lv ${this.player.level}\nHP ${this.player.hp}/${this.player.maxHp}\nMove ${this.player.moveName}`,
+      `${this.player.name}  Lv ${this.player.level}\nHP ${this.player.hp}/${this.player.maxHp}\nQuiz Move ${this.player.moveName}`,
     );
   }
 
