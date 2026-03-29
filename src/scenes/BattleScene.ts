@@ -158,6 +158,8 @@ export class BattleScene extends Phaser.Scene {
 
     this.refreshEnemySprite();
     this.refreshHud();
+    this.startCreatureIdleAnimations();
+    this.playOpeningAnimation();
     this.setActionButtonsEnabled(false);
     this.setBanner(this.introText, THEME.accent);
     this.infoText.setText(
@@ -264,6 +266,7 @@ export class BattleScene extends Phaser.Scene {
         this.enemyIndex += 1;
         this.refreshEnemySprite();
         this.refreshHud();
+        this.playEnemySendOutAnimation();
         this.setBanner(
           this.battleSource === "wild"
             ? `${this.currentEnemy.name} rushes in`
@@ -449,5 +452,53 @@ export class BattleScene extends Phaser.Scene {
 
   private get currentEnemy(): RuntimeCreature {
     return this.enemyParty[this.enemyIndex];
+  }
+
+  private startCreatureIdleAnimations(): void {
+    this.tweens.add({
+      targets: this.playerSprite,
+      scaleX: 1.03,
+      scaleY: 0.97,
+      angle: -1.8,
+      duration: 560,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
+    });
+
+    this.tweens.add({
+      targets: this.enemySprite,
+      scaleX: 1.04,
+      scaleY: 0.96,
+      angle: 1.8,
+      duration: 620,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
+    });
+  }
+
+  private playOpeningAnimation(): void {
+    this.playerSprite.setX(170);
+    this.enemySprite.setX(790);
+
+    this.tweens.add({
+      targets: this.playerSprite,
+      x: 220,
+      duration: 360,
+      ease: "Back.easeOut",
+    });
+
+    this.playEnemySendOutAnimation();
+  }
+
+  private playEnemySendOutAnimation(): void {
+    this.enemySprite.setX(790);
+    this.tweens.add({
+      targets: this.enemySprite,
+      x: 720,
+      duration: 360,
+      ease: "Back.easeOut",
+    });
   }
 }

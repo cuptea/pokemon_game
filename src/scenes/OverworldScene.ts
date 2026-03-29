@@ -211,6 +211,7 @@ export class OverworldScene extends Phaser.Scene {
   }
 
   private renderMap(): void {
+    this.tweens.killAll();
     const graphics = this.add.graphics();
 
     for (const patch of this.map.patches) {
@@ -259,6 +260,7 @@ export class OverworldScene extends Phaser.Scene {
       sprite.setSize(24, 32);
       sprite.setOffset(3, 10);
       sprite.setDepth(npc.y);
+      this.addCharacterIdleTween(sprite, npc.id);
     }
 
     for (const trainer of this.map.trainers) {
@@ -267,6 +269,7 @@ export class OverworldScene extends Phaser.Scene {
       sprite.setSize(24, 32);
       sprite.setOffset(3, 10);
       sprite.setDepth(trainer.y);
+      this.addCharacterIdleTween(sprite, trainer.id);
     }
   }
 
@@ -684,5 +687,24 @@ export class OverworldScene extends Phaser.Scene {
       level: Phaser.Math.Between(chosen.minLevel, chosen.maxLevel),
       zoneLabel: zone.label,
     };
+  }
+
+  private addCharacterIdleTween(
+    sprite: Phaser.Physics.Arcade.Sprite,
+    seed: string,
+  ): void {
+    const delay = seed.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0) % 400;
+
+    this.tweens.add({
+      targets: sprite,
+      scaleX: 1.04,
+      scaleY: 0.97,
+      angle: 1.5,
+      duration: 580,
+      delay,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
+    });
   }
 }
