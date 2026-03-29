@@ -2,6 +2,13 @@ import Phaser from "phaser";
 import { getBattleCreatureArt } from "../data/battleCreatureArt";
 import { pickBattleQuizQuestion, type BattleQuizQuestion } from "../data/quiz";
 import { registry } from "../data/registry";
+import {
+  buildRuntimeCreature,
+  buildTrainerRuntimeCreature,
+  buildWildRuntimeCreature,
+  calculateBattleDamage,
+  type RuntimeCreature,
+} from "../game/battleModel";
 import { t } from "../game/i18n";
 import {
   evaluateQuizAnswer,
@@ -11,11 +18,10 @@ import {
 import { getStoryVisualTheme, toHexColor, type StoryVisualTheme } from "../game/storyVisuals";
 import { finalizeBattleTransition } from "../game/battleTransition";
 import { createUiPanel } from "../game/uiSkin";
-import { DIFFICULTY_RULES, GAME_FONT, THEME } from "../game/theme";
+import { GAME_FONT, THEME } from "../game/theme";
 import { worldState } from "../game/worldState";
 import type {
   BattleResult,
-  TrainerPartyMember,
   WildEncounterDefinition,
 } from "../types/world";
 
@@ -24,19 +30,6 @@ type BattleSceneData = {
   playerPartyCreatureIds?: string[];
   battleId?: string;
   wildEncounter?: WildEncounterDefinition;
-};
-
-type RuntimeCreature = {
-  id: string;
-  name: string;
-  hp: number;
-  maxHp: number;
-  attack: number;
-  defense: number;
-  moveName: string;
-  movePower: number;
-  color: number;
-  level: number;
 };
 
 export class BattleScene extends Phaser.Scene {
@@ -96,7 +89,9 @@ export class BattleScene extends Phaser.Scene {
       data.playerPartyCreatureIds?.length && data.playerPartyCreatureIds.length > 0
         ? data.playerPartyCreatureIds
         : [data.playerCreatureId ?? worldState.activeCreatureId];
-    this.playerParty = playerPartyIds.map((creatureId) => this.buildCreature(creatureId));
+    this.playerParty = playerPartyIds.map((creatureId) =>
+      buildRuntimeCreature(creatureId, registry),
+    );
     this.playerIndex = 0;
     this.enemyIndex = 0;
     this.resolved = false;
@@ -112,7 +107,7 @@ export class BattleScene extends Phaser.Scene {
       this.encounteredCreatureId = data.wildEncounter.creatureId;
       this.introText = `${t("battle.wild_encounter")}: ${registry.creatures[data.wildEncounter.creatureId].name} (${data.wildEncounter.zoneLabel})`;
       this.rewardText = t("battle.won_default");
-      this.enemyParty = [this.buildWildCreature(data.wildEncounter)];
+      this.enemyParty = [buildWildRuntimeCreature(data.wildEncounter, registry)];
       return;
     }
 
@@ -121,7 +116,7 @@ export class BattleScene extends Phaser.Scene {
     const battle = registry.trainerBattles[data.battleId!];
     this.introText = battle.intro;
     this.rewardText = battle.reward;
-    this.enemyParty = battle.party.map((member) => this.buildPartyCreature(member));
+    this.enemyParty = battle.party.map((member) => buildTrainerRuntimeCreature(member, registry));
   }
 
   create(): void {
@@ -1080,14 +1075,11 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private calculateDamage(attacker: RuntimeCreature, defender: RuntimeCreature): number {
-    const difficultyMultiplier =
-      attacker === this.currentPlayer
-        ? 1
-        : DIFFICULTY_RULES[worldState.selectedDifficulty].enemyAttackMultiplier;
-
-    return Math.max(
-      2,
-      Math.round((attacker.attack + attacker.movePower - defender.defense) * difficultyMultiplier),
+    return calculateBattleDamage(
+      attacker,
+      defender,
+      worldState.selectedDifficulty,
+      attacker === this.currentPlayer ? "player" : "enemy",
     );
   }
 
@@ -1169,38 +1161,6 @@ export class BattleScene extends Phaser.Scene {
         );
       });
     });
-  }
-
-  private buildCreature(creatureId: string): RuntimeCreature {
-    const creature = registry.creatures[creatureId];
-    const move = registry.moves[creature.moveId];
-
-    return {
-      id: creature.id,
-      name: creature.name,
-      hp: creature.maxHp,
-      maxHp: creature.maxHp,
-      attack: creature.attack,
-      defense: creature.defense,
-      moveName: move.name,
-      movePower: move.power,
-      color: creature.color,
-      level: 5,
-    };
-  }
-
-  private buildPartyCreature(member: TrainerPartyMember): RuntimeCreature {
-    return {
-      ...this.buildCreature(member.creatureId),
-      level: member.level,
-    };
-  }
-
-  private buildWildCreature(member: WildEncounterDefinition): RuntimeCreature {
-    return {
-      ...this.buildCreature(member.creatureId),
-      level: member.level,
-    };
   }
 
   private get currentPlayer(): RuntimeCreature {

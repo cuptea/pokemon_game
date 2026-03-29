@@ -1,9 +1,8 @@
 import Phaser from "phaser";
+import { buildLeaderboardDisplayRows, escapeHtml } from "./leaderboardView";
 import { createGame } from "../game/createGame";
 import {
-  getAvatarLabel,
   getCurrentLanguage,
-  getDifficultyLabel,
   getLanguageLabel,
   getSupportedLanguages,
   setCurrentLanguage,
@@ -294,7 +293,7 @@ class AppShell {
       empty.style.fontSize = "16px";
       table.append(empty);
     } else {
-      this.leaderboardEntries.forEach((entry, index) => {
+      buildLeaderboardDisplayRows(this.leaderboardEntries).forEach((entry) => {
         const row = document.createElement("div");
         row.style.display = "grid";
         row.style.gridTemplateColumns = "58px 1fr auto";
@@ -303,29 +302,23 @@ class AppShell {
         row.style.padding = "12px 14px";
         row.style.border = "2px solid rgba(156, 199, 216, 0.28)";
         row.style.borderRadius = "12px";
-        row.style.background = index === 0 ? "rgba(255, 224, 102, 0.14)" : "rgba(9, 22, 34, 0.65)";
+        row.style.background = entry.featured
+          ? "rgba(255, 224, 102, 0.14)"
+          : "rgba(9, 22, 34, 0.65)";
 
         const rank = document.createElement("strong");
-        rank.textContent = `#${index + 1}`;
+        rank.textContent = entry.rankLabel;
         rank.style.color = "#ffe8a3";
         rank.style.fontSize = "22px";
 
         const meta = document.createElement("div");
         meta.innerHTML = `
           <div style="color:#f8f9fa;font-size:17px;font-weight:700;">${escapeHtml(entry.displayName)}</div>
-          <div style="color:#d9f0ff;font-size:13px;">${escapeHtml(
-            t("app.row_meta", {
-              avatar: getAvatarLabel(entry.avatar),
-              difficulty: getDifficultyLabel(entry.difficulty),
-              victories: entry.victories,
-              discoveries: entry.discoveries,
-              owned: entry.ownedCount,
-            }),
-          )}</div>
+          <div style="color:#d9f0ff;font-size:13px;">${escapeHtml(entry.metaText)}</div>
         `;
 
         const score = document.createElement("div");
-        score.textContent = `${entry.score}`;
+        score.textContent = entry.scoreLabel;
         score.style.color = "#84dcc6";
         score.style.fontSize = "24px";
         score.style.fontWeight = "700";
@@ -432,18 +425,4 @@ function makeButton(
   button.style.boxShadow = "0 10px 24px rgba(0, 0, 0, 0.22)";
   button.addEventListener("click", onClick);
   return button;
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .split("&")
-    .join("&amp;")
-    .split("<")
-    .join("&lt;")
-    .split(">")
-    .join("&gt;")
-    .split('"')
-    .join("&quot;")
-    .split("'")
-    .join("&#39;");
 }
