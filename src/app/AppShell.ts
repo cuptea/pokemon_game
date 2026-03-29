@@ -1,6 +1,17 @@
 import Phaser from "phaser";
 import { createGame } from "../game/createGame";
 import {
+  getAvatarLabel,
+  getCurrentLanguage,
+  getDifficultyLabel,
+  getLanguageLabel,
+  getSupportedLanguages,
+  setCurrentLanguage,
+  t,
+  type SupportedLanguage,
+} from "../game/i18n";
+import { GAME_FONT } from "../game/theme";
+import {
   continueAsGuest,
   initializeSession,
   isGoogleLoginAvailable,
@@ -31,6 +42,7 @@ class AppShell {
   }
 
   async mount(): Promise<void> {
+    this.root.style.fontFamily = GAME_FONT;
     this.sessionUser = await initializeSession();
     this.unsubscribeSession = subscribeToSession((user) => {
       this.sessionUser = user;
@@ -81,16 +93,21 @@ class AppShell {
     hero.style.padding = "34px";
     hero.style.borderRadius = "18px";
 
+    const languageRow = document.createElement("div");
+    languageRow.style.display = "flex";
+    languageRow.style.justifyContent = "flex-end";
+    languageRow.style.marginBottom = "18px";
+    languageRow.append(this.createLanguageSelector());
+
     const title = document.createElement("h1");
-    title.textContent = "Login To Begin Your Quest";
+    title.textContent = t("app.login_title");
     title.style.margin = "0 0 14px";
     title.style.fontSize = "44px";
     title.style.lineHeight = "1.05";
     title.style.color = "#ffe8a3";
 
     const copy = document.createElement("p");
-    copy.textContent =
-      "Sign in with Google to save your name to the leaderboard, or continue as a guest and keep playing locally.";
+    copy.textContent = t("app.login_copy");
     copy.style.margin = "0 0 22px";
     copy.style.fontSize = "18px";
     copy.style.lineHeight = "1.6";
@@ -103,7 +120,7 @@ class AppShell {
     actionRow.style.marginBottom = "18px";
 
     const googleButton = makeButton(
-      isGoogleLoginAvailable() ? "Sign In With Google" : "Google Login Needs Firebase Config",
+      isGoogleLoginAvailable() ? t("app.google_sign_in") : t("app.google_missing"),
       "#ffe066",
       "#08131f",
       () => {
@@ -114,7 +131,7 @@ class AppShell {
     googleButton.style.opacity = isGoogleLoginAvailable() ? "1" : "0.65";
     googleButton.style.cursor = isGoogleLoginAvailable() ? "pointer" : "not-allowed";
 
-    const guestButton = makeButton("Continue As Guest", "#84dcc6", "#08131f", () => {
+    const guestButton = makeButton(t("app.guest_continue"), "#84dcc6", "#08131f", () => {
       void this.handleGuestLogin();
     });
 
@@ -126,11 +143,9 @@ class AppShell {
     notes.style.color = "#d9f0ff";
     notes.style.fontSize = "15px";
     notes.innerHTML = [
-      "Google login uses Firebase Auth in this build.",
-      "Leaderboard scores track victories, discoveries, owned creatures, and story progress.",
-      isGoogleLoginAvailable()
-        ? "Remote leaderboard is enabled when your Firebase project allows Firestore reads and writes."
-        : "Firebase env vars are missing, so this build will use a local guest leaderboard fallback.",
+      t("app.note_google"),
+      t("app.note_score"),
+      isGoogleLoginAvailable() ? t("app.note_remote") : t("app.note_local"),
     ]
       .map((line) => `<div>${line}</div>`)
       .join("");
@@ -144,12 +159,12 @@ class AppShell {
       status.style.background = "rgba(246, 189, 96, 0.16)";
       status.style.color = "#ffe8a3";
       status.style.borderRadius = "12px";
-      hero.append(title, copy, actionRow, notes, status);
+      hero.append(languageRow, title, copy, actionRow, notes, status);
     } else {
-      hero.append(title, copy, actionRow, notes);
+      hero.append(languageRow, title, copy, actionRow, notes);
     }
 
-    const leaderboard = this.renderLeaderboardCard("Top Trainers");
+    const leaderboard = this.renderLeaderboardCard(t("app.top_trainers"));
     shell.append(hero, leaderboard);
     this.root.append(shell);
   }
@@ -182,8 +197,8 @@ class AppShell {
     const modeLabel = document.createElement("span");
     modeLabel.textContent =
       this.sessionUser?.provider === "google"
-        ? "Signed in with Google"
-        : "Guest mode with local save + local leaderboard";
+        ? t("app.signed_in_google")
+        : t("app.guest_mode");
     modeLabel.style.fontSize = "13px";
     modeLabel.style.color = "#d9f0ff";
 
@@ -191,9 +206,12 @@ class AppShell {
 
     const buttons = document.createElement("div");
     buttons.style.display = "flex";
+    buttons.style.alignItems = "center";
     buttons.style.gap = "12px";
 
-    const leaderboardButton = makeButton("Leaderboard", "#ffe066", "#08131f", () => {
+    buttons.append(this.createLanguageSelector());
+
+    const leaderboardButton = makeButton(t("app.leaderboard"), "#ffe066", "#08131f", () => {
       this.leaderboardOpen = true;
       void this.refreshLeaderboard().then(() => {
         this.renderGameShell();
@@ -202,7 +220,7 @@ class AppShell {
     leaderboardButton.style.padding = "10px 16px";
     leaderboardButton.style.fontSize = "15px";
 
-    const signOutButton = makeButton("Sign Out", "#ffb703", "#08131f", () => {
+    const signOutButton = makeButton(t("app.sign_out"), "#ffb703", "#08131f", () => {
       void signOutSession();
     });
     signOutButton.style.padding = "10px 16px";
@@ -237,7 +255,7 @@ class AppShell {
         this.renderGameShell();
       });
 
-      const card = this.renderLeaderboardCard("Leaderboard");
+      const card = this.renderLeaderboardCard(t("app.leaderboard"));
       card.style.width = "min(720px, 92vw)";
       card.style.maxHeight = "80vh";
       card.style.overflow = "auto";
@@ -271,7 +289,7 @@ class AppShell {
 
     if (this.leaderboardEntries.length === 0) {
       const empty = document.createElement("div");
-      empty.textContent = "No scores yet. Be the first trainer to make the board.";
+      empty.textContent = t("app.no_scores");
       empty.style.color = "#d9f0ff";
       empty.style.fontSize = "16px";
       table.append(empty);
@@ -295,7 +313,15 @@ class AppShell {
         const meta = document.createElement("div");
         meta.innerHTML = `
           <div style="color:#f8f9fa;font-size:17px;font-weight:700;">${escapeHtml(entry.displayName)}</div>
-          <div style="color:#d9f0ff;font-size:13px;">${entry.avatar.toUpperCase()} • ${entry.difficulty.toUpperCase()} • ${entry.victories} wins • ${entry.discoveries} discoveries • ${entry.ownedCount} owned</div>
+          <div style="color:#d9f0ff;font-size:13px;">${escapeHtml(
+            t("app.row_meta", {
+              avatar: getAvatarLabel(entry.avatar),
+              difficulty: getDifficultyLabel(entry.difficulty),
+              victories: entry.victories,
+              discoveries: entry.discoveries,
+              owned: entry.ownedCount,
+            }),
+          )}</div>
         `;
 
         const score = document.createElement("div");
@@ -319,7 +345,7 @@ class AppShell {
       await this.refreshLeaderboard();
     } catch (error) {
       this.statusMessage =
-        error instanceof Error ? error.message : "Google sign-in could not be completed.";
+        error instanceof Error ? error.message : t("app.google_failed");
       this.renderLogin();
     }
   }
@@ -340,6 +366,49 @@ class AppShell {
     }
 
     this.gameHost = null;
+  }
+
+  private createLanguageSelector(): HTMLElement {
+    const wrapper = document.createElement("label");
+    wrapper.style.display = "flex";
+    wrapper.style.alignItems = "center";
+    wrapper.style.gap = "10px";
+    wrapper.style.color = "#d9f0ff";
+    wrapper.style.fontSize = "14px";
+    wrapper.style.fontWeight = "700";
+
+    const label = document.createElement("span");
+    label.textContent = t("language.label");
+
+    const select = document.createElement("select");
+    select.value = getCurrentLanguage();
+    select.style.border = "2px solid rgba(156, 199, 216, 0.38)";
+    select.style.borderRadius = "999px";
+    select.style.padding = "8px 12px";
+    select.style.background = "#10243b";
+    select.style.color = "#f8f9fa";
+    select.style.font = "inherit";
+    for (const language of getSupportedLanguages()) {
+      const option = document.createElement("option");
+      option.value = language;
+      option.textContent = getLanguageLabel(language);
+      select.append(option);
+    }
+    select.addEventListener("change", () => {
+      this.handleLanguageChange(select.value as SupportedLanguage);
+    });
+
+    wrapper.append(label, select);
+    return wrapper;
+  }
+
+  private handleLanguageChange(language: SupportedLanguage): void {
+    setCurrentLanguage(language);
+    if (this.sessionUser) {
+      window.location.reload();
+      return;
+    }
+    void this.render();
   }
 }
 

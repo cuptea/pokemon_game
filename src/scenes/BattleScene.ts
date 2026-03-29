@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { getBattleCreatureArt } from "../data/battleCreatureArt";
 import { pickBattleQuizQuestion, type BattleQuizQuestion } from "../data/quiz";
 import { registry } from "../data/registry";
+import { t } from "../game/i18n";
 import {
   evaluateQuizAnswer,
   getQuizTimeLimitMs,
@@ -108,8 +109,8 @@ export class BattleScene extends Phaser.Scene {
     if (data.wildEncounter) {
       this.battleSource = "wild";
       this.encounteredCreatureId = data.wildEncounter.creatureId;
-      this.introText = `A wild ${registry.creatures[data.wildEncounter.creatureId].name} appeared in ${data.wildEncounter.zoneLabel}.`;
-      this.rewardText = `The wild ${registry.creatures[data.wildEncounter.creatureId].name} was driven back into the area.`;
+      this.introText = `${t("battle.wild_encounter")}: ${registry.creatures[data.wildEncounter.creatureId].name} (${data.wildEncounter.zoneLabel})`;
+      this.rewardText = t("battle.won_default");
       this.enemyParty = [this.buildWildCreature(data.wildEncounter)];
       return;
     }
@@ -163,7 +164,7 @@ export class BattleScene extends Phaser.Scene {
       }
     }
 
-    this.add.text(34, 24, this.battleSource === "wild" ? "Wild Encounter" : "Trainer Battle", {
+    this.add.text(34, 24, this.battleSource === "wild" ? t("battle.wild_encounter") : t("battle.trainer_battle"), {
       fontFamily: GAME_FONT,
       fontSize: "34px",
       color: THEME.text,
@@ -174,7 +175,7 @@ export class BattleScene extends Phaser.Scene {
       .setTint(this.visualTheme.accent)
       .setAlpha(0.14);
     this.add
-      .text(866, 26, this.battleSource === "wild" ? "FIELD THREAT" : "TACTICAL DUEL", {
+      .text(866, 26, this.battleSource === "wild" ? t("battle.field_threat") : t("battle.tactical_duel"), {
         fontFamily: GAME_FONT,
         fontSize: "14px",
         color: toHexColor(this.visualTheme.skyTop),
@@ -231,7 +232,7 @@ export class BattleScene extends Phaser.Scene {
     this.applyCreatureVisual(this.playerSprite, this.currentPlayer, "player");
 
     this.add
-      .text(720, 296, "FOE", {
+      .text(720, 296, t("battle.foe"), {
         fontFamily: GAME_FONT,
         fontSize: "16px",
         color: THEME.textDark,
@@ -241,7 +242,7 @@ export class BattleScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
     this.add
-      .text(720, 318, this.battleSource === "wild" ? "ROAMING CREATURE" : "TRAINER PARTY", {
+      .text(720, 318, this.battleSource === "wild" ? t("battle.roaming_creature") : t("battle.trainer_party"), {
         fontFamily: GAME_FONT,
         fontSize: "12px",
         color: THEME.textMuted,
@@ -249,7 +250,7 @@ export class BattleScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
     this.add
-      .text(220, 504, "ALLY", {
+      .text(220, 504, t("battle.ally"), {
         fontFamily: GAME_FONT,
         fontSize: "16px",
         color: THEME.textDark,
@@ -259,7 +260,7 @@ export class BattleScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
     this.add
-      .text(220, 526, "TEAM LEAD", {
+      .text(220, 526, t("battle.team_lead"), {
         fontFamily: GAME_FONT,
         fontSize: "12px",
         color: THEME.textMuted,
@@ -297,7 +298,7 @@ export class BattleScene extends Phaser.Scene {
     this.playerBar = this.add
       .rectangle(52, 534, 236, 18, THEME.accentAlt)
       .setOrigin(0, 0.5);
-    this.add.text(528, 244, "QUESTION", {
+    this.add.text(528, 244, t("battle.question"), {
       fontFamily: GAME_FONT,
       fontSize: "14px",
       color: THEME.textMuted,
@@ -313,7 +314,7 @@ export class BattleScene extends Phaser.Scene {
     this.quizHintText = this.add.text(
       528,
       268,
-      "Press START QUIZ ATTACK or tap Q to reveal the current question.",
+      t("battle.quiz_intro"),
       {
         fontFamily: GAME_FONT,
         fontSize: "18px",
@@ -327,8 +328,8 @@ export class BattleScene extends Phaser.Scene {
       528,
       370,
       this.battleSource === "wild"
-        ? "Wild questions are about tempo. Answer fast to keep control."
-        : "Trainer duels reward cleaner reads and punish hesitation harder.",
+        ? t("battle.quiz_support_wild")
+        : t("battle.quiz_support_trainer"),
       {
         fontFamily: GAME_FONT,
         fontSize: "14px",
@@ -344,7 +345,7 @@ export class BattleScene extends Phaser.Scene {
       .setOrigin(0, 0.5)
       .setVisible(false);
     this.add
-      .text(528, 410, "QUIZ TIMER", {
+      .text(528, 410, t("battle.quiz_timer"), {
         fontFamily: GAME_FONT,
         fontSize: "14px",
         color: THEME.textMuted,
@@ -366,7 +367,7 @@ export class BattleScene extends Phaser.Scene {
       height: 96,
       variant: "warm",
     });
-    this.add.text(40, 538, "BATTLE LOG", {
+    this.add.text(40, 538, t("battle.battle_log"), {
       fontFamily: GAME_FONT,
       fontSize: "14px",
       color: THEME.textMuted,
@@ -378,7 +379,7 @@ export class BattleScene extends Phaser.Scene {
       color: THEME.textMuted,
       wordWrap: { width: 880 },
     });
-    this.add.text(528, 444, "COMMAND", {
+    this.add.text(528, 444, t("battle.command"), {
       fontFamily: GAME_FONT,
       fontSize: "14px",
       color: THEME.textMuted,
@@ -388,11 +389,11 @@ export class BattleScene extends Phaser.Scene {
     this.attackButton = this.createActionButton(
       570,
       472,
-      "Start Quiz Attack",
+      t("battle.start_quiz_attack"),
       () => this.beginQuizTurn(),
       "accent",
     );
-    this.runButton = this.createActionButton(570, 520, "Run", () => this.finishBattle("escape"), "cool");
+    this.runButton = this.createActionButton(570, 520, t("battle.run"), () => this.finishBattle("escape"), "cool");
     this.quizButtons = [
       this.createActionButton(528, 448, "", () => this.answerQuiz(0), "cool", 250),
       this.createActionButton(528, 496, "", () => this.answerQuiz(1), "cool", 250),
@@ -418,8 +419,8 @@ export class BattleScene extends Phaser.Scene {
     this.setBanner(this.introText, THEME.accent);
     this.infoText.setText(
       this.battleSource === "wild"
-        ? `${this.currentEnemy.name} blocks the path. Open the quiz to strike before it can lunge again.`
-        : `Trainer sends out ${this.currentEnemy.name}. Open the quiz to take control of the tempo.`,
+        ? `${this.currentEnemy.name} blocks the path. ${t("battle.quiz_intro")}`
+        : `${t("battle.trainer_battle")}: ${this.currentEnemy.name}. ${t("battle.quiz_intro")}`,
     );
 
     this.time.delayedCall(850, () => {
@@ -706,13 +707,13 @@ export class BattleScene extends Phaser.Scene {
     this.quizTimerText.setText("");
     this.quizHintText.setText(
       this.battleSource === "wild"
-        ? "Press START QUIZ ATTACK or tap Q to reveal the question and ambush the wild foe."
-        : "Press START QUIZ ATTACK or tap Q to reveal the question and seize the duel's momentum.",
+        ? t("battle.quiz_intro")
+        : t("battle.quiz_intro"),
     );
     this.promptSupportText.setText(
       this.battleSource === "wild"
-        ? "Wild questions are about tempo. Answer fast to keep control."
-        : "Trainer duels reward cleaner reads and punish hesitation harder.",
+        ? t("battle.quiz_support_wild")
+        : t("battle.quiz_support_trainer"),
     );
     this.promptSupportText.setColor(THEME.textMuted);
     this.quizStartedAt = 0;
@@ -745,18 +746,20 @@ export class BattleScene extends Phaser.Scene {
     });
     this.askedQuizIds.add(this.currentQuiz.id);
     this.setBanner(
-      this.quizStreak > 1 ? `Quiz Attack x${this.quizStreak}` : "Quiz Attack",
+      this.quizStreak > 1
+        ? t("battle.banner_quiz_streak", { count: this.quizStreak })
+        : t("battle.banner_quiz_attack"),
       THEME.accentAlt,
     );
     this.quizHintText.setText(this.currentQuiz.prompt);
     this.promptSupportText.setText(
       this.battleSource === "wild"
-        ? "Pick fast. Wild foes swing momentum quickly."
-        : "Read carefully. Trainer foes punish slow, sloppy answers.",
+        ? t("battle.quiz_support_wild")
+        : t("battle.quiz_support_trainer"),
     );
     this.promptSupportText.setColor(THEME.textMuted);
     this.infoText.setText(
-      `Press 1, 2, or 3, or click an answer before time runs out.${this.quizStreak > 0 ? ` Streak: ${this.quizStreak}.` : ""}`,
+      `${t("battle.answer_controls")} ${t("battle.answer_reward")}${this.quizStreak > 0 ? ` ${t("battle.banner_quiz_streak", { count: this.quizStreak })}.` : ""}`,
     );
     this.currentQuiz.choices.forEach((choice, index) => {
       this.quizButtons[index].setText(`${index + 1}. ${choice.label}`);
@@ -805,25 +808,39 @@ export class BattleScene extends Phaser.Scene {
     this.revealQuizAnswer(index, correctChoice?.id);
 
     if (!correct) {
-      this.setBanner(evaluation.banner, THEME.danger);
-      this.promptSupportText.setText("Wrong answer. The foe gets a clean punish window.");
+      this.setBanner(t("battle.banner_wrong_answer"), THEME.danger);
+      this.promptSupportText.setText(t("battle.wrong_support"));
       this.promptSupportText.setColor("#ffb3b3");
       this.quizPromptFrame.setStrokeStyle(2, THEME.danger, 0.96);
       this.infoText.setText(
-        `${choice?.label ?? "That answer"} was wrong. Correct answer: ${correctChoice?.label ?? "unknown"}. ${this.currentEnemy.name} takes the opening and strikes first.`,
+        t("battle.wrong_log", {
+          enemy: this.currentEnemy.name,
+          move: this.currentEnemy.moveName,
+          player: this.currentPlayer.name,
+          damage: this.calculateDamage(this.currentEnemy, this.currentPlayer) + evaluation.enemyPunishBonus,
+        }),
       );
       this.time.delayedCall(evaluation.revealDelayMs, () => {
         this.clearQuizState();
-        this.resolveEnemyTurn(0, evaluation.enemyPunishBonus, "missed quiz");
+        this.resolveEnemyTurn(evaluation.enemyPunishBonus);
       });
       return;
     }
 
-    this.setBanner(evaluation.banner, THEME.success);
+    this.setBanner(
+      evaluation.grade === "perfect"
+        ? this.quizStreak > 1
+          ? t("battle.banner_perfect_streak", { count: this.quizStreak })
+          : t("battle.banner_perfect_answer")
+        : this.quizStreak > 1
+          ? t("battle.banner_correct_streak", { count: this.quizStreak })
+          : t("battle.banner_correct_answer"),
+      THEME.success,
+    );
     this.promptSupportText.setText(
       evaluation.grade === "perfect"
-        ? "Perfect read. Bonus damage applied."
-        : "Correct answer. Your attack lands stronger.",
+        ? t("battle.correct_support")
+        : t("battle.correct_support"),
     );
     this.promptSupportText.setColor("#b7efc5");
     this.quizPromptFrame.setStrokeStyle(2, THEME.success, 0.96);
@@ -833,7 +850,12 @@ export class BattleScene extends Phaser.Scene {
       Math.round(baseDamage * evaluation.damageMultiplier) + evaluation.flatDamageBonus,
     );
     this.infoText.setText(
-      `${correctChoice?.label ?? "That answer"} was right. ${this.currentPlayer.name} turns it into ${playerDamage} damage with ${this.currentPlayer.moveName}.${this.quizStreak > 1 ? ` Streak ${this.quizStreak} is live.` : ""}`,
+      t("battle.correct_log", {
+        player: this.currentPlayer.name,
+        move: this.currentPlayer.moveName,
+        damage: playerDamage,
+        enemy: this.currentEnemy.name,
+      }),
     );
     this.time.delayedCall(evaluation.revealDelayMs, () => {
       this.clearQuizState();
@@ -847,7 +869,7 @@ export class BattleScene extends Phaser.Scene {
           return;
         }
 
-        this.time.delayedCall(420, () => this.resolveEnemyTurn(playerDamage, 0));
+        this.time.delayedCall(420, () => this.resolveEnemyTurn());
       });
     });
   }
@@ -870,31 +892,42 @@ export class BattleScene extends Phaser.Scene {
     });
     this.quizStreak = evaluation.nextStreak;
     this.revealQuizAnswer(undefined, correctChoice?.id);
-    this.setBanner(evaluation.banner, THEME.accent);
-    this.promptSupportText.setText("Timer expired. The enemy seizes the tempo.");
+    this.setBanner(t("battle.banner_too_slow"), THEME.accent);
+    this.promptSupportText.setText(t("battle.timeout_support"));
     this.promptSupportText.setColor("#ffe8a3");
     this.quizPromptFrame.setStrokeStyle(2, THEME.accent, 0.96);
     this.infoText.setText(
-      `${this.currentPlayer.name} missed the opening. Correct answer: ${correctChoice?.label ?? "unknown"}. ${this.currentEnemy.name} counters immediately.`,
+      t("battle.timeout_log", {
+        enemy: this.currentEnemy.name,
+        move: this.currentEnemy.moveName,
+        player: this.currentPlayer.name,
+        damage: this.calculateDamage(this.currentEnemy, this.currentPlayer) + evaluation.enemyPunishBonus,
+      }),
     );
     this.time.delayedCall(evaluation.revealDelayMs, () => {
       this.clearQuizState();
-      this.resolveEnemyTurn(0, evaluation.enemyPunishBonus, "timeout");
+      this.resolveEnemyTurn(evaluation.enemyPunishBonus);
     });
   }
 
-  private resolveEnemyTurn(
-    playerDamage: number,
-    enemyPunishBonus = 0,
-    punishLabel?: string,
-  ): void {
+  private resolveEnemyTurn(enemyPunishBonus = 0): void {
     const enemyDamage =
       this.calculateDamage(this.currentEnemy, this.currentPlayer) + enemyPunishBonus;
     this.currentPlayer.hp = Math.max(0, this.currentPlayer.hp - enemyDamage);
     this.infoText.setText(
       enemyPunishBonus > 0
-        ? `${this.currentEnemy.name} punishes the ${punishLabel ?? "miss"} with ${this.currentEnemy.moveName} for ${enemyDamage} damage.`
-        : `${this.currentPlayer.name} dealt ${playerDamage}. ${this.currentEnemy.name} answered with ${this.currentEnemy.moveName}.`,
+        ? t("battle.wrong_log", {
+            enemy: this.currentEnemy.name,
+            move: this.currentEnemy.moveName,
+            player: this.currentPlayer.name,
+            damage: enemyDamage,
+          })
+        : t("battle.enemy_counter_log", {
+            enemy: this.currentEnemy.name,
+            move: this.currentEnemy.moveName,
+            player: this.currentPlayer.name,
+            damage: enemyDamage,
+          }),
     );
 
     this.animateImpact(this.playerSprite, enemyDamage, THEME.danger, () => {
@@ -907,7 +940,7 @@ export class BattleScene extends Phaser.Scene {
       }
 
       this.time.delayedCall(260, () => {
-        this.setBanner(`Quiz your move against ${this.currentEnemy.name}`, THEME.accentAlt);
+        this.setBanner(t("battle.quiz_move", { name: this.currentEnemy.name }), THEME.accentAlt);
         this.setActionButtonsEnabled(true);
       });
     });
@@ -915,7 +948,7 @@ export class BattleScene extends Phaser.Scene {
 
   private handleEnemyFaint(): void {
     const faintedName = this.currentEnemy.name;
-    this.setBanner(`${faintedName} fainted`, THEME.success);
+    this.setBanner(t("battle.fainted", { name: faintedName }), THEME.success);
 
     this.time.delayedCall(380, () => {
       if (this.enemyIndex < this.enemyParty.length - 1) {
@@ -925,14 +958,14 @@ export class BattleScene extends Phaser.Scene {
         this.playEnemySendOutAnimation();
         this.setBanner(
           this.battleSource === "wild"
-            ? `${this.currentEnemy.name} rushes in`
-            : `Trainer sends out ${this.currentEnemy.name}`,
+            ? t("battle.send_in", { name: this.currentEnemy.name })
+            : t("battle.send_in", { name: this.currentEnemy.name }),
           THEME.accent,
         );
         this.infoText.setText(
           this.battleSource === "wild"
-            ? `${faintedName} fainted. Another wild creature lunges forward.`
-            : `${faintedName} fainted. ${this.currentEnemy.name} steps into battle.`,
+            ? t("battle.enemy_next_wild", { fainted: faintedName })
+            : t("battle.enemy_next_trainer", { fainted: faintedName, name: this.currentEnemy.name }),
         );
         this.time.delayedCall(700, () => {
           this.attackButton.setVisible(true);
@@ -942,8 +975,8 @@ export class BattleScene extends Phaser.Scene {
       } else {
         this.infoText.setText(
           this.battleSource === "wild"
-            ? `${faintedName} fainted. The grass settles down.`
-            : `${faintedName} fainted. The trainer's party is out of creatures.`,
+            ? t("battle.win_wild", { name: faintedName })
+            : t("battle.win_trainer", { name: faintedName }),
         );
         this.time.delayedCall(700, () => this.finishBattle("win"));
       }
@@ -1052,10 +1085,25 @@ export class BattleScene extends Phaser.Scene {
 
   private refreshHud(): void {
     this.enemyHpText.setText(
-      `${this.currentEnemy.name}  Lv ${this.currentEnemy.level}\nHP ${this.currentEnemy.hp}/${this.currentEnemy.maxHp}\nParty ${this.enemyIndex + 1}/${this.enemyParty.length}`,
+      t("battle.enemy_status", {
+        name: this.currentEnemy.name,
+        level: this.currentEnemy.level,
+        hp: this.currentEnemy.hp,
+        maxHp: this.currentEnemy.maxHp,
+        index: this.enemyIndex + 1,
+        total: this.enemyParty.length,
+      }),
     );
     this.playerHpText.setText(
-      `${this.currentPlayer.name}  Lv ${this.currentPlayer.level}\nHP ${this.currentPlayer.hp}/${this.currentPlayer.maxHp}\nParty ${this.playerIndex + 1}/${this.playerParty.length}\nQuiz Move ${this.currentPlayer.moveName}`,
+      t("battle.player_status", {
+        name: this.currentPlayer.name,
+        level: this.currentPlayer.level,
+        hp: this.currentPlayer.hp,
+        maxHp: this.currentPlayer.maxHp,
+        index: this.playerIndex + 1,
+        total: this.playerParty.length,
+        move: this.currentPlayer.moveName,
+      }),
     );
   }
 
@@ -1074,14 +1122,14 @@ export class BattleScene extends Phaser.Scene {
     this.setActionButtonsEnabled(false);
 
     if (outcome === "win") {
-      this.setBanner("Victory", THEME.success);
-      this.infoText.setText(this.rewardText || "The battle is won. The route ahead feels earned.");
+      this.setBanner(t("battle.victory"), THEME.success);
+      this.infoText.setText(this.rewardText || t("battle.won_default"));
     } else if (outcome === "lose") {
-      this.setBanner("Defeat", THEME.danger);
-      this.infoText.setText("Your team needs more training before the next challenge.");
+      this.setBanner(t("battle.defeat"), THEME.danger);
+      this.infoText.setText(t("battle.lost_default"));
     } else {
-      this.setBanner("Retreat", THEME.accent);
-      this.infoText.setText("You stepped out of the battle and returned to the overworld.");
+      this.setBanner(t("battle.retreat"), THEME.accent);
+      this.infoText.setText(t("battle.retreated_default"));
     }
 
     this.time.delayedCall(820, () => {
@@ -1089,7 +1137,7 @@ export class BattleScene extends Phaser.Scene {
       this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
         if (outcome === "lose") {
           this.scene.start("GameOverScene", {
-            message: "Your battle buddies fell in combat. Regroup, rethink your team, and try the region again.",
+            message: t("gameover.defeat_message"),
           });
           return;
         }
@@ -1193,7 +1241,7 @@ export class BattleScene extends Phaser.Scene {
   private handlePlayerFaint(): void {
     const faintedName = this.currentPlayer.name;
     this.quizStreak = 0;
-    this.setBanner(`${faintedName} fainted`, THEME.danger);
+    this.setBanner(t("battle.fainted", { name: faintedName }), THEME.danger);
 
     this.time.delayedCall(380, () => {
       if (this.playerIndex < this.playerParty.length - 1) {
@@ -1201,9 +1249,9 @@ export class BattleScene extends Phaser.Scene {
         this.refreshPlayerSprite();
         this.refreshHud();
         this.playPlayerSendOutAnimation();
-        this.setBanner(`${this.currentPlayer.name} steps in`, THEME.accentAlt);
+        this.setBanner(t("battle.send_in", { name: this.currentPlayer.name }), THEME.accentAlt);
         this.setInfoText(
-          `${faintedName} fainted. ${this.currentPlayer.name} takes the front slot for your team.`,
+          t("battle.player_steps_in", { name: this.currentPlayer.name }),
         );
         this.time.delayedCall(700, () => {
           this.attackButton.setVisible(true);

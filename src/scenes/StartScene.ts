@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { getStoryProfile } from "../data/stories";
+import { getAvatarLabel, getDifficultyLabel, getLocalizedStorySurface, t } from "../game/i18n";
 import { saveWorldState, worldState } from "../game/worldState";
 import { DIFFICULTY_RULES, GAME_FONT, PLAYER_AVATARS } from "../game/theme";
 import { createUiPanel } from "../game/uiSkin";
@@ -71,7 +71,7 @@ export class StartScene extends Phaser.Scene {
       strokeThickness: 10,
     }).setOrigin(0.5);
 
-    this.add.text(480, 158, "1980s handheld-inspired adventure mode", {
+    this.add.text(480, 158, t("start.subtitle"), {
       fontFamily: GAME_FONT,
       fontSize: "20px",
       color: "#d9f0ff",
@@ -80,7 +80,7 @@ export class StartScene extends Phaser.Scene {
   }
 
   private drawAvatarSelect(): void {
-    this.add.text(120, 218, "SELECT HERO", {
+    this.add.text(120, 218, t("start.select_hero"), {
       fontFamily: GAME_FONT,
       fontSize: "24px",
       color: "#f8f9fa",
@@ -89,7 +89,7 @@ export class StartScene extends Phaser.Scene {
 
     AVATAR_ORDER.forEach((avatar, index) => {
       const info = PLAYER_AVATARS[avatar];
-      const story = getStoryProfile(avatar);
+      const story = getLocalizedStorySurface(avatar);
       const panel = this.add.container(200 + index * 220, 330);
       const card = createUiPanel({
         scene: this,
@@ -103,7 +103,7 @@ export class StartScene extends Phaser.Scene {
       });
       card.setPosition(0, 0);
       const portrait = this.add.image(0, -6, info.textureKey).setScale(2.8);
-      const label = this.add.text(0, 64, info.label, {
+      const label = this.add.text(0, 64, getAvatarLabel(avatar), {
         fontFamily: GAME_FONT,
         fontSize: "24px",
         color: "#f8f9fa",
@@ -121,7 +121,7 @@ export class StartScene extends Phaser.Scene {
   }
 
   private drawDifficultySelect(): void {
-    this.add.text(120, 468, "DIFFICULTY", {
+    this.add.text(120, 468, t("start.difficulty"), {
       fontFamily: GAME_FONT,
       fontSize: "24px",
       color: "#f8f9fa",
@@ -130,7 +130,7 @@ export class StartScene extends Phaser.Scene {
 
     DIFFICULTY_ORDER.forEach((difficulty, index) => {
       const config = DIFFICULTY_RULES[difficulty];
-      const button = this.add.text(160 + index * 215, 520, config.label, {
+      const button = this.add.text(160 + index * 215, 520, getDifficultyLabel(difficulty), {
         fontFamily: GAME_FONT,
         fontSize: "24px",
         color: "#08131f",
@@ -143,7 +143,7 @@ export class StartScene extends Phaser.Scene {
   }
 
   private drawStartButton(): void {
-    this.startButton = this.add.text(480, 584, "PRESS ENTER TO START", {
+    this.startButton = this.add.text(480, 584, t("start.press_enter"), {
       fontFamily: GAME_FONT,
       fontSize: "26px",
       color: "#08131f",
@@ -253,10 +253,15 @@ export class StartScene extends Phaser.Scene {
       });
     });
 
-    const avatar = PLAYER_AVATARS[AVATAR_ORDER[this.avatarIndex]];
-    const story = getStoryProfile(AVATAR_ORDER[this.avatarIndex]);
+    const avatar = AVATAR_ORDER[this.avatarIndex];
+    const story = getLocalizedStorySurface(avatar);
     this.hintText.setText(
-      `${avatar.label} selected. ${story.storyTitle}.\nGoal: ${story.objectiveShort}\nRoute: ${story.routeLabel}`,
+      t("start.hint", {
+        avatar: getAvatarLabel(avatar),
+        storyTitle: story.storyTitle,
+        objective: story.objectiveShort,
+        route: story.routeLabel,
+      }),
     );
   }
 

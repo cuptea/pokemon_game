@@ -1,7 +1,7 @@
 import Phaser from "phaser";
-import { getStoryProfile } from "../data/stories";
+import { getAvatarLabel, getLocalizedStorySurface, t } from "../game/i18n";
 import { resetAdventurePreservingProfile, worldState } from "../game/worldState";
-import { GAME_FONT, PLAYER_AVATARS } from "../game/theme";
+import { GAME_FONT } from "../game/theme";
 import { createUiPanel } from "../game/uiSkin";
 import { submitLeaderboardFromCurrentWorldState } from "../services/leaderboard";
 
@@ -11,7 +11,7 @@ type GameOverSceneData = {
 
 export class GameOverScene extends Phaser.Scene {
   private restartButton!: Phaser.GameObjects.Text;
-  private message = "Your team was overwhelmed before the route could be secured.";
+  private message = t("gameover.defeat_message");
   private restarting = false;
 
   constructor() {
@@ -23,8 +23,8 @@ export class GameOverScene extends Phaser.Scene {
   }
 
   create(): void {
-    const story = getStoryProfile(worldState.selectedAvatar);
-    const avatarLabel = PLAYER_AVATARS[worldState.selectedAvatar].label;
+    const story = getLocalizedStorySurface(worldState.selectedAvatar);
+    const avatarLabel = getAvatarLabel(worldState.selectedAvatar);
 
     this.scene.stop("OverworldScene");
     void submitLeaderboardFromCurrentWorldState();
@@ -66,7 +66,7 @@ export class GameOverScene extends Phaser.Scene {
     });
 
     this.add
-      .text(480, 132, "GAME OVER", {
+      .text(480, 132, t("gameover.title"), {
         fontFamily: GAME_FONT,
         fontSize: "58px",
         color: "#ffe8a3",
@@ -78,7 +78,7 @@ export class GameOverScene extends Phaser.Scene {
       .setDepth(3);
 
     this.add
-      .text(480, 198, `${avatarLabel}'s journey faltered on ${story.routeLabel}.`, {
+      .text(480, 198, t("gameover.journey", { avatar: avatarLabel, route: story.routeLabel }), {
         fontFamily: GAME_FONT,
         fontSize: "20px",
         color: "#ffd6e0",
@@ -100,7 +100,7 @@ export class GameOverScene extends Phaser.Scene {
       .setDepth(3);
 
     this.add
-      .text(480, 356, "Your selected hero and difficulty will be kept.\nYour team and route progress will restart from the beginning.", {
+      .text(480, 356, t("gameover.keep_profile"), {
         fontFamily: GAME_FONT,
         fontSize: "18px",
         color: "#d9f0ff",
@@ -112,7 +112,7 @@ export class GameOverScene extends Phaser.Scene {
       .setDepth(3);
 
     this.restartButton = this.add
-      .text(480, 448, "PRESS ENTER TO START AGAIN", {
+      .text(480, 448, t("gameover.press_enter"), {
         fontFamily: GAME_FONT,
         fontSize: "26px",
         color: "#08131f",
@@ -124,7 +124,7 @@ export class GameOverScene extends Phaser.Scene {
       .setDepth(3);
 
     this.add
-      .text(480, 504, "Space also restarts the adventure.", {
+      .text(480, 504, t("gameover.space_hint"), {
         fontFamily: GAME_FONT,
         fontSize: "16px",
         color: "#d9f0ff",

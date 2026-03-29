@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 
 import { registry } from "../data/registry";
+import { t } from "../game/i18n";
 import {
   MAX_PARTY_SIZE,
   getRequiredPartySize,
@@ -65,25 +66,25 @@ export class PartyScene extends Phaser.Scene {
       alpha: 0.96,
     });
 
-    this.add.text(112, 78, "Buddy Party", {
+    this.add.text(112, 78, t("party.title"), {
       fontFamily: GAME_FONT,
       fontSize: "32px",
       color: THEME.text,
       fontStyle: "bold",
     });
-    this.add.text(112, 110, "Click owned buddies to add/remove them. Click a selected buddy to make it the lead.", {
+    this.add.text(112, 110, t("party.help"), {
       fontFamily: GAME_FONT,
       fontSize: "17px",
       color: THEME.textMuted,
       wordWrap: { width: 720 },
     });
-    this.add.text(132, 152, "Owned", {
+    this.add.text(132, 152, t("party.owned"), {
       fontFamily: GAME_FONT,
       fontSize: "24px",
       color: "#ffe8a3",
       fontStyle: "bold",
     });
-    this.add.text(490, 152, "Selected For Battle", {
+    this.add.text(490, 152, t("party.selected"), {
       fontFamily: GAME_FONT,
       fontSize: "24px",
       color: "#b7efc5",
@@ -131,7 +132,7 @@ export class PartyScene extends Phaser.Scene {
         .text(
           132,
           194 + index * 34,
-          `${isSelected ? "[IN PARTY]" : "[OWNED]"} ${creature.name}`,
+          `${isSelected ? t("party.in_party") : t("party.owned_tag")} ${creature.name}`,
           {
             fontFamily: GAME_FONT,
             fontSize: "18px",
@@ -154,12 +155,16 @@ export class PartyScene extends Phaser.Scene {
 
     for (let index = 0; index < MAX_PARTY_SIZE; index += 1) {
       const creatureId = this.selectedPartyCreatureIds[index];
-      const creatureName = creatureId ? registry.creatures[creatureId]?.name ?? creatureId : "[Empty]";
+      const creatureName = creatureId
+        ? registry.creatures[creatureId]?.name ?? creatureId
+        : t("party.empty");
       const button = this.add
         .text(
           490,
           194 + index * 54,
-          `Slot ${index + 1}: ${creatureName}${index === 0 && creatureId ? "  [Lead]" : ""}`,
+          index === 0 && creatureId
+            ? t("party.slot_lead", { slot: index + 1, name: creatureName })
+            : t("party.slot", { slot: index + 1, name: creatureName }),
           {
             fontFamily: GAME_FONT,
             fontSize: "20px",
@@ -186,24 +191,28 @@ export class PartyScene extends Phaser.Scene {
 
   private refreshStatusText(): void {
     const required = getRequiredPartySize(this.ownedCreatureIds);
+    const requirement =
+      required >= 3
+        ? t("party.requirement_full")
+        : t("party.requirement_partial", { required });
     this.statusText.setText(
-      [
-        `Owned buddies: ${this.ownedCreatureIds.length}`,
-        `Selected buddies: ${this.selectedPartyCreatureIds.length}/${required}`,
-        required >= 3
-          ? "Choose exactly 3 buddies before leaving the menu."
-          : `You only own ${required} buddy${required === 1 ? "" : "ies"} right now, so your current team is smaller.`,
-        "Tip: click a selected buddy on the right to move it into the lead slot.",
-      ].join("\n"),
+      t("party.status", {
+        owned: this.ownedCreatureIds.length,
+        selected: this.selectedPartyCreatureIds.length,
+        required,
+        requirement,
+      }),
     );
-    this.infoText.setText("Press C or ESC to confirm and return to the overworld.");
+    this.infoText.setText(t("party.confirm"));
   }
 
   private tryClose(): void {
     const required = getRequiredPartySize(this.ownedCreatureIds);
     if (this.selectedPartyCreatureIds.length !== required) {
       this.infoText.setText(
-        `Pick ${required} battle buddy${required === 1 ? "" : "ies"} before leaving the party menu.`,
+        t("party.block_close", {
+          required,
+        }),
       );
       return;
     }

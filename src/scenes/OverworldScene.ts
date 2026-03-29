@@ -1,6 +1,13 @@
 import Phaser from "phaser";
 import { registry } from "../data/registry";
-import { getStoryProfile, getStoryStatus } from "../data/stories";
+import { getStoryProfile } from "../data/stories";
+import {
+  getAvatarLabel,
+  getDifficultyLabel,
+  getLocalizedStoryStatus,
+  getLocalizedStorySurface,
+  t,
+} from "../game/i18n";
 import { submitLeaderboardFromCurrentWorldState } from "../services/leaderboard";
 import { getStoryVisualTheme, toHexColor, type StoryVisualTheme } from "../game/storyVisuals";
 import { getTerrainStyle, isWaterTone } from "../game/terrainRender";
@@ -117,8 +124,12 @@ export class OverworldScene extends Phaser.Scene {
     return getStoryProfile(worldState.selectedAvatar);
   }
 
-  private get storyStatus() {
-    return getStoryStatus(worldState);
+  private get localizedStory() {
+    return getLocalizedStorySurface(worldState.selectedAvatar);
+  }
+
+  private get localizedStoryStatus() {
+    return getLocalizedStoryStatus(worldState);
   }
 
   private get availableExits(): ExitDefinition[] {
@@ -210,8 +221,11 @@ export class OverworldScene extends Phaser.Scene {
     this.areaText.setText(this.map.title);
     this.setMessage(
       initial
-        ? this.activeStory.openingMessage
-        : `You arrived in ${this.map.title}. ${this.storyStatus.currentObjective}`,
+        ? this.localizedStory.openingMessage
+        : t("overworld.arrived", {
+            map: this.map.title,
+            objective: this.localizedStoryStatus.currentObjective,
+          }),
     );
     this.refreshStatus();
     saveWorldState();
@@ -238,7 +252,7 @@ export class OverworldScene extends Phaser.Scene {
 
     this.createPanel(width - 48, 60, 24, 88, "cool", THEME.panelStroke, 0.88);
     this.hudText = this.add
-      .text(40, 102, "Arrow keys/WASD move. E interacts. C opens party. H opens help. R resets progress.", {
+      .text(40, 102, t("overworld.hud_default"), {
         fontFamily: GAME_FONT,
         fontSize: "17px",
         color: THEME.textMuted,
@@ -443,10 +457,20 @@ export class OverworldScene extends Phaser.Scene {
   private drawInteractableMarker(worldItem: InteractablePlacement): void {
     const defaults =
       worldItem.kind === "loot"
-        ? { label: "LOOT", tint: THEME.success, fill: this.visualTheme.horizon, radius: 26 }
+        ? { label: t("overworld.marker_loot"), tint: THEME.success, fill: this.visualTheme.horizon, radius: 26 }
         : worldItem.kind === "quest"
-          ? { label: "CLUE", tint: this.visualTheme.accent, fill: this.visualTheme.skyTop, radius: 30 }
-          : { label: "READ", tint: this.visualTheme.accentSoft, fill: this.visualTheme.skyTop, radius: 24 };
+          ? {
+              label: t("overworld.marker_clue"),
+              tint: this.visualTheme.accent,
+              fill: this.visualTheme.skyTop,
+              radius: 30,
+            }
+          : {
+              label: t("overworld.marker_read"),
+              tint: this.visualTheme.accentSoft,
+              fill: this.visualTheme.skyTop,
+              radius: 24,
+            };
 
     const tint = worldItem.markerTint ?? defaults.tint;
     const fill = worldItem.markerFill ?? defaults.fill;
@@ -815,7 +839,7 @@ export class OverworldScene extends Phaser.Scene {
     for (const npc of this.map.npcs) {
       const distance = Phaser.Math.Distance.Between(this.player.x, this.player.y, npc.x, npc.y);
       if (distance < INTERACTION_RANGE && distance < nearestDistance) {
-        nearest = { kind: "npc", data: npc, prompt: `Press E to talk to ${npc.name}` };
+        nearest = { kind: "npc", data: npc, prompt: t("overworld.prompt_talk", { name: npc.name }) };
         nearestDistance = distance;
       }
     }
@@ -833,8 +857,14 @@ export class OverworldScene extends Phaser.Scene {
           kind: "trainer",
           data: trainer,
           prompt: defeated
-            ? `Press E to talk to ${trainer.trainerClass} ${trainer.name}`
-            : `Press E to challenge ${trainer.trainerClass} ${trainer.name}`,
+            ? t("overworld.prompt_trainer_talk", {
+                trainerClass: trainer.trainerClass,
+                name: trainer.name,
+              })
+            : t("overworld.prompt_challenge", {
+                trainerClass: trainer.trainerClass,
+                name: trainer.name,
+              }),
         };
         nearestDistance = distance;
       }
@@ -893,11 +923,19 @@ export class OverworldScene extends Phaser.Scene {
 
     if (this.encounterZone) {
       this.hudText.setText(
-        `Exploring ${this.map.title}. ${this.encounterZone.label}. ${this.storyStatus.chapterTitle}. Goal: ${this.storyStatus.objectiveShort}`,
+        t("overworld.hud_exploring", {
+          map: this.map.title,
+          zone: this.encounterZone.label,
+          chapter: this.localizedStoryStatus.chapterTitle,
+          objective: this.localizedStoryStatus.objectiveShort,
+        }),
       );
     } else {
       this.hudText.setText(
-        `Arrow keys/WASD move. E interacts. C opens party. ${this.storyStatus.chapterTitle}. Goal: ${this.storyStatus.objectiveShort}`,
+        t("overworld.hud_controls", {
+          chapter: this.localizedStoryStatus.chapterTitle,
+          objective: this.localizedStoryStatus.objectiveShort,
+        }),
       );
     }
   }
@@ -941,7 +979,11 @@ export class OverworldScene extends Phaser.Scene {
 
     this.transitionLocked = true;
     this.player.setVelocity(0, 0);
-    this.setMessage(`Wild rustling... ${registry.creatures[wildEncounter.creatureId].name} appears!`);
+    this.setMessage(
+      t("overworld.wild_appears", {
+        name: registry.creatures[wildEncounter.creatureId].name,
+      }),
+    );
     this.cameras.main.fadeOut(160, 8, 19, 31);
     this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
       this.scene.launch("BattleScene", {
@@ -1069,20 +1111,20 @@ export class OverworldScene extends Phaser.Scene {
             worldState.selectedPartyCreatureIds[0] ?? capturedId;
           this.setMessage(
             worldState.selectedPartyCreatureIds.includes(capturedId)
-              ? `${creatureName} joined your team and was added to your battle buddies.`
-              : `${creatureName} joined your team. Open the party menu with C to add it to your battle buddies.`,
+              ? t("overworld.joined_team_added", { name: creatureName })
+              : t("overworld.joined_team", { name: creatureName }),
           );
           saveWorldState();
         } else {
-          this.setMessage(`${creatureName} retreated. Your team already knows this route well.`);
+          this.setMessage(t("overworld.already_owned", { name: creatureName }));
         }
       } else {
-        this.setMessage(`${creatureName} retreated. The tall grass settles down for a moment.`);
+        this.setMessage(t("overworld.grass_settles", { name: creatureName }));
       }
     } else if (result.outcome === "lose") {
-      this.setMessage("Your team needs more training. Try another route or battle again.");
+      this.setMessage(t("overworld.lose_training"));
     } else {
-      this.setMessage("You slipped out of the battle and returned to the field.");
+      this.setMessage(t("overworld.escape_field"));
     }
     this.lastPlayerPosition.set(this.player.x, this.player.y);
     this.encounterTravel = 0;
@@ -1104,7 +1146,14 @@ export class OverworldScene extends Phaser.Scene {
       worldState.selectedPartyCreatureIds[0] ??
       worldState.activeCreatureId;
     this.statusText.setText(
-      `Hero: ${PLAYER_AVATARS[worldState.selectedAvatar].label}\nLead: ${leadCreatureName}\nParty: ${worldState.selectedPartyCreatureIds.length}/3\nOwned: ${worldState.ownedCreatureIds.length}\nVictories: ${defeatedCount}\nDiscoveries: ${collectedCount}`,
+      t("overworld.status", {
+        hero: getAvatarLabel(worldState.selectedAvatar),
+        lead: leadCreatureName,
+        party: worldState.selectedPartyCreatureIds.length,
+        owned: worldState.ownedCreatureIds.length,
+        victories: defeatedCount,
+        discoveries: collectedCount,
+      }),
     );
   }
 
@@ -1122,45 +1171,36 @@ export class OverworldScene extends Phaser.Scene {
       variant: "warm",
       alpha: 1,
     });
-    const title = this.add.text(-panelWidth / 2 + 24, -panelHeight / 2 + 20, "Field Guide", {
+    const title = this.add.text(-panelWidth / 2 + 24, -panelHeight / 2 + 20, t("overworld.help_title"), {
       fontFamily: GAME_FONT,
       fontSize: "28px",
       color: THEME.text,
       fontStyle: "bold",
     });
+    const localizedStory = this.localizedStory;
+    const localizedStatus = this.localizedStoryStatus;
     const body = this.add.text(
       -panelWidth / 2 + 24,
       -panelHeight / 2 + 66,
-      [
-        "Move: Arrow keys or WASD",
-        "Interact: E",
-        "Party menu: C",
-        "Help: H",
-        "Reset progress: R",
-        "",
-        `Hero: ${PLAYER_AVATARS[worldState.selectedAvatar].label}`,
-        `Lead buddy: ${registry.creatures[worldState.selectedPartyCreatureIds[0]]?.name ?? worldState.activeCreatureId}`,
-        `Battle buddies: ${worldState.selectedPartyCreatureIds.length}/3`,
-        `Owned allies: ${worldState.ownedCreatureIds.length}`,
-        `Story: ${this.activeStory.storyTitle}`,
-        `Act: ${this.storyStatus.actLabel}`,
-        `Difficulty: ${DIFFICULTY_RULES[worldState.selectedDifficulty].label}`,
-        "",
-        `Goal: ${this.storyStatus.currentObjective}`,
-        `Next landmark: ${this.storyStatus.nextLandmark}`,
-        "",
-        `Mystery: ${this.activeStory.regionalMystery}`,
-        "",
-        `Liora's read: ${this.activeStory.mentorHook}`,
-        "",
-        `Route: ${this.storyStatus.routeLabel}`,
-        "",
-        `Arc: ${this.activeStory.longArc}`,
-        "",
-        `Chapter note: ${this.storyStatus.chapterSummary}`,
-        "",
-        `Asset direction: ${Object.values({ ...registry.maps }).length} maps are ready for a CC0-first art swap.`,
-      ].join("\n"),
+      t("overworld.help_body", {
+        hero: getAvatarLabel(worldState.selectedAvatar),
+        lead:
+          registry.creatures[worldState.selectedPartyCreatureIds[0]]?.name ??
+          worldState.activeCreatureId,
+        party: worldState.selectedPartyCreatureIds.length,
+        owned: worldState.ownedCreatureIds.length,
+        story: localizedStory.storyTitle,
+        act: localizedStatus.actLabel,
+        difficulty: getDifficultyLabel(worldState.selectedDifficulty),
+        goal: localizedStatus.currentObjective,
+        nextLandmark: localizedStatus.nextLandmark,
+        mystery: localizedStory.regionalMystery,
+        mentor: localizedStory.mentorHook,
+        route: localizedStatus.routeLabel,
+        arc: localizedStory.longArc,
+        chapterSummary: localizedStatus.chapterSummary,
+        mapCount: Object.keys(registry.maps).length,
+      }),
       {
         fontFamily: GAME_FONT,
         fontSize: "15px",
@@ -1199,7 +1239,7 @@ export class OverworldScene extends Phaser.Scene {
     this.transitionLocked = false;
     this.interactionLockedUntil = this.time.now + 180;
     this.loadCurrentMap();
-    this.setMessage("Progress reset. Mossgrove Town is fresh again.");
+    this.setMessage(t("overworld.progress_reset"));
   }
 
   private openPartyMenu(): void {
@@ -1218,7 +1258,10 @@ export class OverworldScene extends Phaser.Scene {
     this.transitionLocked = false;
     this.refreshStatus();
     this.setMessage(
-      `${registry.creatures[worldState.selectedPartyCreatureIds[0]]?.name ?? "Lead buddy"} is now leading your ${worldState.selectedPartyCreatureIds.length}-buddy party.`,
+      t("overworld.party_lead", {
+        name: registry.creatures[worldState.selectedPartyCreatureIds[0]]?.name ?? "Lead buddy",
+        partySize: worldState.selectedPartyCreatureIds.length,
+      }),
     );
   }
 
@@ -1281,7 +1324,8 @@ export class OverworldScene extends Phaser.Scene {
     const labelColor =
       exit.markerFill ??
       (borderExit ? this.visualTheme.haze : this.visualTheme.accentSoft);
-    const markerLabel = exit.markerLabel ?? (borderExit ? "EXIT" : "DOOR");
+    const markerLabel =
+      exit.markerLabel ?? (borderExit ? t("overworld.marker_exit") : t("overworld.marker_door"));
 
     const threshold = this.add
       .rectangle(

@@ -1,4 +1,5 @@
-export const GAME_FONT = '"Trebuchet MS", Verdana, sans-serif';
+export const GAME_FONT =
+  '"Trebuchet MS", "Noto Sans SC", "Microsoft YaHei", "PingFang SC", Verdana, sans-serif';
 
 export const THEME = {
   panelFill: 0x10243b,
