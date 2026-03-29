@@ -8,6 +8,11 @@ describe("battle quiz questions", () => {
       battleSource: "wild",
       playerMoveName: "Ember",
       enemyCreatureId: "mosslet",
+      enemyMoveName: "Vine Snap",
+      playerLevel: 5,
+      enemyLevel: 4,
+      enemyPartySize: 1,
+      enemyPartyIndex: 0,
     });
 
     expect(questions.length).toBeGreaterThan(0);
@@ -24,6 +29,11 @@ describe("battle quiz questions", () => {
         battleSource: "trainer",
         playerMoveName: "Vine Snap",
         enemyCreatureId: "sparkbud",
+        enemyMoveName: "Ember",
+        playerLevel: 5,
+        enemyLevel: 4,
+        enemyPartySize: 2,
+        enemyPartyIndex: 1,
       },
       () => 0,
     );
@@ -31,5 +41,24 @@ describe("battle quiz questions", () => {
     expect(question.prompt.length).toBeGreaterThan(5);
     expect(question.choices).toHaveLength(3);
     expect(question.choices.some((choice) => choice.isCorrect)).toBe(true);
+  });
+
+  it("avoids excluded questions when other prompts are available", () => {
+    const question = pickBattleQuizQuestion(
+      {
+        battleSource: "trainer",
+        playerMoveName: "Vine Snap",
+        enemyCreatureId: "sparkbud",
+        enemyMoveName: "Ember",
+        playerLevel: 5,
+        enemyLevel: 4,
+        enemyPartySize: 2,
+        enemyPartyIndex: 0,
+        excludeIds: ["player-move", "enemy-move", "enemy-name"],
+      },
+      () => 0,
+    );
+
+    expect(["player-move", "enemy-move", "enemy-name"]).not.toContain(question.id);
   });
 });

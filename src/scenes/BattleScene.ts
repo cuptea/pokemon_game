@@ -39,6 +39,11 @@ export class BattleScene extends Phaser.Scene {
   private attackButton!: Phaser.GameObjects.Text;
   private runButton!: Phaser.GameObjects.Text;
   private quizButtons: Phaser.GameObjects.Text[] = [];
+  private quizHotkeys!: {
+    one: Phaser.Input.Keyboard.Key;
+    two: Phaser.Input.Keyboard.Key;
+    three: Phaser.Input.Keyboard.Key;
+  };
   private bannerText!: Phaser.GameObjects.Text;
   private playerBar!: Phaser.GameObjects.Rectangle;
   private enemyBar!: Phaser.GameObjects.Rectangle;
@@ -51,6 +56,9 @@ export class BattleScene extends Phaser.Scene {
   private rewardText = "";
   private encounteredCreatureId?: string;
   private currentQuiz: BattleQuizQuestion | null = null;
+  private quizTimerFill!: Phaser.GameObjects.Rectangle;
+  private quizTimerEvent?: Phaser.Time.TimerEvent;
+  private askedQuizIds = new Set<string>();
 
   constructor() {
     super("BattleScene");
@@ -62,6 +70,8 @@ export class BattleScene extends Phaser.Scene {
     this.enemyIndex = 0;
     this.resolved = false;
     this.actionLocked = true;
+    this.currentQuiz = null;
+    this.askedQuizIds.clear();
 
     if (data.wildEncounter) {
       this.battleSource = "wild";
@@ -180,6 +190,19 @@ export class BattleScene extends Phaser.Scene {
     this.playerBar = this.add
       .rectangle(52, 534, 236, 18, THEME.accentAlt)
       .setOrigin(0, 0.5);
+    this.add.rectangle(528, 430, 250, 10, 0x30475e, 0.9).setOrigin(0, 0.5);
+    this.quizTimerFill = this.add
+      .rectangle(528, 430, 250, 10, THEME.accentAlt, 1)
+      .setOrigin(0, 0.5)
+      .setVisible(false);
+    this.add
+      .text(528, 410, "QUIZ TIMER", {
+        fontFamily: GAME_FONT,
+        fontSize: "14px",
+        color: THEME.textMuted,
+        fontStyle: "bold",
+      })
+      .setVisible(true);
 
     this.add
       .rectangle(480, 582, 896, 92, THEME.panelFill, 0.95)
@@ -206,6 +229,14 @@ export class BattleScene extends Phaser.Scene {
       this.createActionButton(528, 544, "", () => this.answerQuiz(2), 250),
     ];
     this.setQuizButtonsVisible(false);
+    this.quizHotkeys = this.input.keyboard!.addKeys({
+      one: Phaser.Input.Keyboard.KeyCodes.ONE,
+      two: Phaser.Input.Keyboard.KeyCodes.TWO,
+      three: Phaser.Input.Keyboard.KeyCodes.THREE,
+    }) as BattleScene["quizHotkeys"];
+    this.quizHotkeys.one.on("down", () => this.answerQuiz(0));
+    this.quizHotkeys.two.on("down", () => this.answerQuiz(1));
+    this.quizHotkeys.three.on("down", () => this.answerQuiz(2));
 
     this.refreshEnemySprite();
     this.refreshHud();
@@ -284,6 +315,16 @@ export class BattleScene extends Phaser.Scene {
       button.setVisible(visible);
       button.setAlpha(visible ? 1 : 0);
     }
+    this.quizTimerFill.setVisible(visible);
+  }
+
+  private clearQuizState(): void {
+    this.currentQuiz = null;
+    this.quizTimerEvent?.remove(false);
+    this.quizTimerEvent = undefined;
+    this.tweens.killTweensOf(this.quizTimerFill);
+    this.setQuizButtonsVisible(false);
+    this.quizTimerFill.displayWidth = 250;
   }
 
   private beginQuizTurn(): void {
@@ -298,13 +339,33 @@ export class BattleScene extends Phaser.Scene {
       battleSource: this.battleSource,
       playerMoveName: this.player.moveName,
       enemyCreatureId: this.currentEnemy.id,
+      enemyMoveName: this.currentEnemy.moveName,
+      playerLevel: this.player.level,
+      enemyLevel: this.currentEnemy.level,
+      enemyPartySize: this.enemyParty.length,
+      enemyPartyIndex: this.enemyIndex,
+      excludeIds: [...this.askedQuizIds],
     });
+    this.askedQuizIds.add(this.currentQuiz.id);
     this.setBanner("Quiz Attack", THEME.accentAlt);
-    this.infoText.setText(this.currentQuiz.prompt);
+    this.infoText.setText(
+      `${this.currentQuiz.prompt}\nPress 1, 2, or 3, or click an answer before time runs out.`,
+    );
     this.currentQuiz.choices.forEach((choice, index) => {
-      this.quizButtons[index].setText(choice.label);
+      this.quizButtons[index].setText(`${index + 1}. ${choice.label}`);
     });
     this.setQuizButtonsVisible(true);
+    const quizTimeMs = this.battleSource === "trainer" ? 4800 : 6200;
+    this.quizTimerFill.setFillStyle(
+      this.battleSource === "trainer" ? THEME.accent : THEME.accentAlt,
+    );
+    this.tweens.add({
+      targets: this.quizTimerFill,
+      displayWidth: 0,
+      duration: quizTimeMs,
+      ease: "Linear",
+    });
+    this.quizTimerEvent = this.time.delayedCall(quizTimeMs, () => this.handleQuizTimeout());
     this.actionLocked = false;
   }
 
@@ -314,10 +375,9 @@ export class BattleScene extends Phaser.Scene {
     }
 
     this.actionLocked = true;
-    this.setQuizButtonsVisible(false);
     const choice = this.currentQuiz.choices[index];
     const correct = choice?.isCorrect ?? false;
-    this.currentQuiz = null;
+    this.clearQuizState();
 
     if (!correct) {
       this.setBanner("Missed Answer", THEME.danger);
@@ -347,6 +407,20 @@ export class BattleScene extends Phaser.Scene {
 
       this.time.delayedCall(420, () => this.resolveEnemyTurn(playerDamage, false));
     });
+  }
+
+  private handleQuizTimeout(): void {
+    if (this.resolved || this.actionLocked || !this.currentQuiz) {
+      return;
+    }
+
+    this.actionLocked = true;
+    this.clearQuizState();
+    this.setBanner("Too Slow", THEME.accent);
+    this.infoText.setText(
+      `${this.player.name} missed the opening. ${this.currentEnemy.name} counters immediately.`,
+    );
+    this.time.delayedCall(300, () => this.resolveEnemyTurn(0, true));
   }
 
   private resolveEnemyTurn(playerDamage: number, punished = false): void {
@@ -518,6 +592,7 @@ export class BattleScene extends Phaser.Scene {
     }
 
     this.resolved = true;
+    this.clearQuizState();
     this.setActionButtonsEnabled(false);
 
     if (outcome === "win") {
