@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { getBattleCreatureArt } from "../data/battleCreatureArt";
 import { registry } from "../data/registry";
 import { getStoryProfile } from "../data/stories";
 import {
@@ -12,6 +13,7 @@ import { submitLeaderboardFromCurrentWorldState } from "../services/leaderboard"
 import { getStoryVisualTheme, toHexColor, type StoryVisualTheme } from "../game/storyVisuals";
 import { getTerrainStyle, isWaterTone } from "../game/terrainRender";
 import { createUiPanel } from "../game/uiSkin";
+import { createCenteredRoamBounds, createZoneRoamBounds, pickRoamTarget, type RoamBounds } from "../game/wander";
 import { resetWorldState, saveWorldState, worldState } from "../game/worldState";
 import { DIFFICULTY_RULES, GAME_FONT, PLAYER_AVATARS, THEME } from "../game/theme";
 import type {
@@ -26,6 +28,7 @@ import type {
   MapModule,
   NpcPlacement,
   TrainerPlacement,
+  WildEncounterDefinition,
   WorldPatch,
 } from "../types/world";
 
@@ -34,10 +37,36 @@ const ACCELERATION = 0.22;
 const INTERACTION_RANGE = 90;
 
 type Interactable =
-  | { kind: "npc"; data: NpcPlacement; prompt: string }
-  | { kind: "trainer"; data: TrainerPlacement; prompt: string }
+  | { kind: "npc"; data: NpcActor; prompt: string }
+  | { kind: "trainer"; data: TrainerActor; prompt: string }
+  | { kind: "wild"; data: WildRoamerActor; prompt: string }
   | { kind: "exit"; data: ExitDefinition; prompt: string }
   | { kind: "world"; data: InteractablePlacement; prompt: string };
+
+type BaseRoamingActor = {
+  id: string;
+  sprite: Phaser.GameObjects.Image;
+  roamBounds: RoamBounds;
+  speed: number;
+  pauseUntil: number;
+  moveTween?: Phaser.Tweens.Tween;
+};
+
+type NpcActor = BaseRoamingActor & {
+  kind: "npc";
+  data: NpcPlacement;
+};
+
+type TrainerActor = BaseRoamingActor & {
+  kind: "trainer";
+  data: TrainerPlacement;
+};
+
+type WildRoamerActor = BaseRoamingActor & {
+  kind: "wild";
+  data: WildEncounterDefinition;
+  zoneId: string;
+};
 
 export class OverworldScene extends Phaser.Scene {
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
@@ -70,6 +99,9 @@ export class OverworldScene extends Phaser.Scene {
   private helpVisible = false;
   private walkCycle = 0;
   private facing: Facing = "down";
+  private npcActors: NpcActor[] = [];
+  private trainerActors: TrainerActor[] = [];
+  private wildActors: WildRoamerActor[] = [];
 
   constructor() {
     super("OverworldScene");
@@ -103,6 +135,7 @@ export class OverworldScene extends Phaser.Scene {
     }
 
     this.handleMovement(delta);
+    this.updateRoamingActors();
     this.updateCurrentInteractable();
     this.updateEncounterState();
     this.maybeTriggerWildEncounter();
@@ -207,6 +240,10 @@ export class OverworldScene extends Phaser.Scene {
     this.visualTheme = getStoryVisualTheme(worldState.selectedAvatar, this.map.id);
     const spawn = this.map.spawnPoints[worldState.currentSpawnId];
 
+    this.npcActors = [];
+    this.trainerActors = [];
+    this.wildActors = [];
+    this.currentInteractable = null;
     this.children.removeAll();
     this.physics.world.colliders.destroy();
     this.physics.world.setBounds(0, 0, this.map.width, this.map.height);
@@ -573,23 +610,133 @@ export class OverworldScene extends Phaser.Scene {
       }
     }
 
-    for (const npc of this.map.npcs) {
-      const sprite = this.physics.add.staticSprite(npc.x, npc.y, "npc");
-      sprite.setTint(npc.color);
-      sprite.setSize(24, 32);
-      sprite.setOffset(3, 10);
-      sprite.setDepth(npc.y);
-      this.addCharacterIdleTween(sprite, npc.id);
+    this.npcActors = this.map.npcs.map((npc) => this.spawnNpcActor(npc));
+    this.trainerActors = this.map.trainers.map((trainer) => this.spawnTrainerActor(trainer));
+    this.wildActors = this.spawnWildRoamers();
+  }
+
+  private spawnNpcActor(npc: NpcPlacement): NpcActor {
+    const sprite = this.add
+      .image(npc.x, npc.y, "npc")
+      .setTint(npc.color)
+      .setDepth(npc.y);
+    const actor: NpcActor = {
+      kind: "npc",
+      id: npc.id,
+      data: npc,
+      sprite,
+      roamBounds: createCenteredRoamBounds(npc.x, npc.y, 56, this.map.width, this.map.height),
+      speed: 26,
+      pauseUntil: this.time.now + Phaser.Math.Between(150, 900),
+    };
+    this.addCharacterIdleTween(sprite, npc.id);
+    return actor;
+  }
+
+  private spawnTrainerActor(trainer: TrainerPlacement): TrainerActor {
+    const sprite = this.add
+      .image(trainer.x, trainer.y, "trainer")
+      .setTint(trainer.color)
+      .setDepth(trainer.y);
+    const actor: TrainerActor = {
+      kind: "trainer",
+      id: trainer.id,
+      data: trainer,
+      sprite,
+      roamBounds: createCenteredRoamBounds(
+        trainer.x,
+        trainer.y,
+        64,
+        this.map.width,
+        this.map.height,
+      ),
+      speed: 28,
+      pauseUntil: this.time.now + Phaser.Math.Between(250, 1100),
+    };
+    this.addCharacterIdleTween(sprite, trainer.id);
+    return actor;
+  }
+
+  private spawnWildRoamers(): WildRoamerActor[] {
+    const actors: WildRoamerActor[] = [];
+
+    for (const zone of this.map.encounterZones) {
+      const encounter = this.rollEncounter(zone);
+      if (!encounter) {
+        continue;
+      }
+
+      const roamBounds = createZoneRoamBounds(zone, 36);
+      const spawn = pickRoamTarget(roamBounds);
+      const art = getBattleCreatureArt(encounter.creatureId);
+      const textureKey = art?.frontKey ?? "npc";
+      const scale = art ? Math.max(0.42, art.enemyScale * 0.28) : 0.62;
+      const tint = registry.creatures[encounter.creatureId]?.color ?? 0xffffff;
+      const sprite = this.add
+        .image(spawn.x, spawn.y, textureKey)
+        .setScale(scale)
+        .setTint(tint)
+        .setDepth(spawn.y);
+      const actor: WildRoamerActor = {
+        kind: "wild",
+        id: `wild-${zone.id}-${encounter.creatureId}`,
+        data: encounter,
+        zoneId: zone.id,
+        sprite,
+        roamBounds,
+        speed: 24,
+        pauseUntil: this.time.now + Phaser.Math.Between(200, 1000),
+      };
+      this.addCharacterIdleTween(sprite, actor.id);
+      actors.push(actor);
     }
 
-    for (const trainer of this.map.trainers) {
-      const sprite = this.physics.add.staticSprite(trainer.x, trainer.y, "trainer");
-      sprite.setTint(trainer.color);
-      sprite.setSize(24, 32);
-      sprite.setOffset(3, 10);
-      sprite.setDepth(trainer.y);
-      this.addCharacterIdleTween(sprite, trainer.id);
+    return actors;
+  }
+
+  private updateRoamingActors(): void {
+    if (this.transitionLocked || this.helpVisible) {
+      return;
     }
+
+    for (const actor of [...this.npcActors, ...this.trainerActors, ...this.wildActors]) {
+      actor.sprite.setDepth(actor.sprite.y);
+
+      if (actor.moveTween?.isPlaying()) {
+        continue;
+      }
+
+      if (this.time.now < actor.pauseUntil) {
+        continue;
+      }
+
+      this.startActorWander(actor);
+    }
+  }
+
+  private startActorWander(actor: NpcActor | TrainerActor | WildRoamerActor): void {
+    const target = pickRoamTarget(actor.roamBounds);
+    const distance = Phaser.Math.Distance.Between(actor.sprite.x, actor.sprite.y, target.x, target.y);
+
+    if (distance < 10) {
+      actor.pauseUntil = this.time.now + Phaser.Math.Between(500, 1400);
+      return;
+    }
+
+    actor.moveTween = this.tweens.add({
+      targets: actor.sprite,
+      x: target.x,
+      y: target.y,
+      duration: Math.max(700, (distance / actor.speed) * 1000),
+      ease: "Sine.easeInOut",
+      onUpdate: () => {
+        actor.sprite.setDepth(actor.sprite.y);
+      },
+      onComplete: () => {
+        actor.moveTween = undefined;
+        actor.pauseUntil = this.time.now + Phaser.Math.Between(650, 1800);
+      },
+    });
   }
 
   private getWorldTextureScale(textureKey: string): number {
@@ -836,35 +983,61 @@ export class OverworldScene extends Phaser.Scene {
     let nearest: Interactable | null = null;
     let nearestDistance = Number.POSITIVE_INFINITY;
 
-    for (const npc of this.map.npcs) {
-      const distance = Phaser.Math.Distance.Between(this.player.x, this.player.y, npc.x, npc.y);
+    for (const npc of this.npcActors) {
+      const distance = Phaser.Math.Distance.Between(
+        this.player.x,
+        this.player.y,
+        npc.sprite.x,
+        npc.sprite.y,
+      );
       if (distance < INTERACTION_RANGE && distance < nearestDistance) {
-        nearest = { kind: "npc", data: npc, prompt: t("overworld.prompt_talk", { name: npc.name }) };
+        nearest = {
+          kind: "npc",
+          data: npc,
+          prompt: t("overworld.prompt_talk", { name: npc.data.name }),
+        };
         nearestDistance = distance;
       }
     }
 
-    for (const trainer of this.map.trainers) {
+    for (const trainer of this.trainerActors) {
       const distance = Phaser.Math.Distance.Between(
         this.player.x,
         this.player.y,
-        trainer.x,
-        trainer.y,
+        trainer.sprite.x,
+        trainer.sprite.y,
       );
       if (distance < INTERACTION_RANGE && distance < nearestDistance) {
-        const defeated = Boolean(worldState.defeatedBattles[trainer.battleId]);
+        const defeated = Boolean(worldState.defeatedBattles[trainer.data.battleId]);
         nearest = {
           kind: "trainer",
           data: trainer,
           prompt: defeated
             ? t("overworld.prompt_trainer_talk", {
-                trainerClass: trainer.trainerClass,
-                name: trainer.name,
+                trainerClass: trainer.data.trainerClass,
+                name: trainer.data.name,
               })
             : t("overworld.prompt_challenge", {
-                trainerClass: trainer.trainerClass,
-                name: trainer.name,
+                trainerClass: trainer.data.trainerClass,
+                name: trainer.data.name,
               }),
+        };
+        nearestDistance = distance;
+      }
+    }
+
+    for (const wildActor of this.wildActors) {
+      const distance = Phaser.Math.Distance.Between(
+        this.player.x,
+        this.player.y,
+        wildActor.sprite.x,
+        wildActor.sprite.y,
+      );
+      if (distance < INTERACTION_RANGE && distance < nearestDistance) {
+        nearest = {
+          kind: "wild",
+          data: wildActor,
+          prompt: t("overworld.prompt_wild", { name: registry.creatures[wildActor.data.creatureId].name }),
         };
         nearestDistance = distance;
       }
@@ -952,6 +1125,17 @@ export class OverworldScene extends Phaser.Scene {
       return;
     }
 
+    if (
+      this.wildActors.some(
+        (actor) =>
+          Phaser.Math.Distance.Between(this.player.x, this.player.y, actor.sprite.x, actor.sprite.y) <
+          120,
+      )
+    ) {
+      this.lastPlayerPosition.set(this.player.x, this.player.y);
+      return;
+    }
+
     this.encounterTravel += Phaser.Math.Distance.Between(
       this.lastPlayerPosition.x,
       this.lastPlayerPosition.y,
@@ -1022,7 +1206,7 @@ export class OverworldScene extends Phaser.Scene {
     }
 
     if (interactable.kind === "npc") {
-      const npc = interactable.data;
+      const npc = interactable.data.data;
       const defeated = npc.battleId ? Boolean(worldState.defeatedBattles[npc.battleId]) : false;
       const override = npc.storyKey ? this.activeStory.dialogueByKey[npc.storyKey] : undefined;
       const lines = defeated
@@ -1036,7 +1220,12 @@ export class OverworldScene extends Phaser.Scene {
       return;
     }
 
-    const trainer = interactable.data;
+    if (interactable.kind === "wild") {
+      this.launchWildBattle(interactable.data);
+      return;
+    }
+
+    const trainer = interactable.data.data;
     const defeated = Boolean(worldState.defeatedBattles[trainer.battleId]);
     this.setMessage((defeated ? trainer.defeatedLines : trainer.lines).join(" "));
 
@@ -1077,6 +1266,32 @@ export class OverworldScene extends Phaser.Scene {
       this.scene.launch("BattleScene", {
         battleId,
         playerPartyCreatureIds: [...worldState.selectedPartyCreatureIds],
+      });
+      this.scene.pause();
+    });
+  }
+
+  private launchWildBattle(actor: WildRoamerActor): void {
+    if (this.transitionLocked) {
+      return;
+    }
+
+    this.wildActors = this.wildActors.filter((wildActor) => wildActor.id !== actor.id);
+    actor.moveTween?.stop();
+    actor.sprite.destroy();
+
+    this.transitionLocked = true;
+    this.player.setVelocity(0, 0);
+    this.setMessage(
+      t("overworld.wild_appears", {
+        name: registry.creatures[actor.data.creatureId].name,
+      }),
+    );
+    this.cameras.main.fadeOut(160, 8, 19, 31);
+    this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
+      this.scene.launch("BattleScene", {
+        playerPartyCreatureIds: [...worldState.selectedPartyCreatureIds],
+        wildEncounter: actor.data,
       });
       this.scene.pause();
     });
@@ -1292,7 +1507,7 @@ export class OverworldScene extends Phaser.Scene {
   }
 
   private addCharacterIdleTween(
-    sprite: Phaser.Physics.Arcade.Sprite,
+    sprite: Phaser.GameObjects.Image,
     seed: string,
   ): void {
     const delay = seed.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0) % 400;

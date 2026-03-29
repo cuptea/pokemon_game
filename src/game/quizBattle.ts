@@ -21,12 +21,10 @@ type QuizAnswerParams = {
 };
 
 export function getQuizTimeLimitMs(
-  battleSource: "trainer" | "wild",
-  enemyPartyIndex: number,
+  _battleSource: "trainer" | "wild",
+  _enemyPartyIndex: number,
 ): number {
-  const base = battleSource === "trainer" ? 5000 : 6200;
-  const slotPressure = enemyPartyIndex * (battleSource === "trainer" ? 280 : 180);
-  return Math.max(3200, base - slotPressure);
+  return 30000;
 }
 
 export function getQuizWarningTimeMs(timeLimitMs: number): number {

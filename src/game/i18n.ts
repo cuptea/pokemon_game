@@ -92,6 +92,7 @@ const TRANSLATIONS: Record<SupportedLanguage, Record<string, string>> = {
     "overworld.prompt_talk": "Press E to talk to {name}",
     "overworld.prompt_trainer_talk": "Press E to talk to {trainerClass} {name}",
     "overworld.prompt_challenge": "Press E to challenge {trainerClass} {name}",
+    "overworld.prompt_wild": "Press E to approach {name}",
     "overworld.wild_appears": "Wild rustling... {name} appears!",
     "overworld.joined_team_added":
       "{name} joined your team and was added to your battle buddies.",
@@ -337,6 +338,7 @@ const TRANSLATIONS: Record<SupportedLanguage, Record<string, string>> = {
     "overworld.prompt_talk": "按 E 与 {name} 对话",
     "overworld.prompt_trainer_talk": "按 E 与 {trainerClass} {name} 对话",
     "overworld.prompt_challenge": "按 E 挑战 {trainerClass} {name}",
+    "overworld.prompt_wild": "按 E 靠近 {name}",
     "overworld.wild_appears": "草丛摇动……{name} 出现了！",
     "overworld.joined_team_added": "{name} 加入了队伍，并被加入战斗伙伴。",
     "overworld.joined_team": "{name} 加入了队伍。按 C 打开队伍菜单，把它加入战斗伙伴。",
@@ -573,6 +575,7 @@ const TRANSLATIONS: Record<SupportedLanguage, Record<string, string>> = {
       "Druecke E, um mit {trainerClass} {name} zu sprechen",
     "overworld.prompt_challenge":
       "Druecke E, um {trainerClass} {name} herauszufordern",
+    "overworld.prompt_wild": "Druecke E, um dich {name} zu naehern",
     "overworld.wild_appears": "Wildes Rascheln... {name} erscheint!",
     "overworld.joined_team_added":
       "{name} ist deinem Team beigetreten und wurde zu deinen Kampfgefaehrten hinzugefuegt.",

@@ -90,6 +90,7 @@ describe("battle quiz questions", () => {
 
   it("grades fast correct answers higher than slow ones and resets streak on failures", () => {
     const timeLimitMs = getQuizTimeLimitMs("trainer", 1);
+    expect(timeLimitMs).toBe(30000);
     const warningMs = getQuizWarningTimeMs(timeLimitMs);
     const perfect = evaluateQuizAnswer({
       battleSource: "trainer",
