@@ -461,7 +461,8 @@ export class BattleScene extends Phaser.Scene {
     }
     this.quizTimerFill.setVisible(visible);
     this.quizTimerText.setVisible(visible);
-    this.quizHintText.setVisible(!visible);
+    this.quizHintText.setVisible(true);
+    this.quizHintText.setAlpha(visible ? 1 : 0.92);
   }
 
   private clearQuizState(): void {
