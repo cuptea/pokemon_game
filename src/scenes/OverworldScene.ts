@@ -4,6 +4,7 @@ import { worldState } from "../game/worldState";
 import { GAME_FONT, THEME } from "../game/theme";
 import type {
   BattleResult,
+  EncounterSlot,
   EncounterZone,
   ExitDefinition,
   InteractablePlacement,
@@ -41,6 +42,8 @@ export class OverworldScene extends Phaser.Scene {
   private encounterZone: EncounterZone | null = null;
   private interactionLockedUntil = 0;
   private transitionLocked = false;
+  private encounterTravel = 0;
+  private lastPlayerPosition = new Phaser.Math.Vector2();
 
   constructor() {
     super("OverworldScene");
@@ -60,6 +63,7 @@ export class OverworldScene extends Phaser.Scene {
     this.handleMovement(delta);
     this.updateCurrentInteractable();
     this.updateEncounterState();
+    this.maybeTriggerWildEncounter();
 
     if (
       Phaser.Input.Keyboard.JustDown(this.keys.interact) &&
@@ -98,6 +102,8 @@ export class OverworldScene extends Phaser.Scene {
     this.renderMap();
     this.createUi();
     this.spawnPlayer(spawn.x, spawn.y);
+    this.lastPlayerPosition.set(spawn.x, spawn.y);
+    this.encounterTravel = 0;
     this.areaText.setText(this.map.title);
     this.setMessage(`You arrived in ${this.map.title}.`);
 
@@ -376,6 +382,53 @@ export class OverworldScene extends Phaser.Scene {
     }
   }
 
+  private maybeTriggerWildEncounter(): void {
+    if (this.isInteractionLocked || !this.encounterZone) {
+      this.lastPlayerPosition.set(this.player.x, this.player.y);
+      return;
+    }
+
+    const body = this.player.body as Phaser.Physics.Arcade.Body;
+    if (body.speed < 25) {
+      this.lastPlayerPosition.set(this.player.x, this.player.y);
+      return;
+    }
+
+    this.encounterTravel += Phaser.Math.Distance.Between(
+      this.lastPlayerPosition.x,
+      this.lastPlayerPosition.y,
+      this.player.x,
+      this.player.y,
+    );
+    this.lastPlayerPosition.set(this.player.x, this.player.y);
+
+    if (this.encounterTravel < 95) {
+      return;
+    }
+
+    this.encounterTravel = 0;
+    if (Math.random() > 0.2) {
+      return;
+    }
+
+    const wildEncounter = this.rollEncounter(this.encounterZone);
+    if (!wildEncounter) {
+      return;
+    }
+
+    this.transitionLocked = true;
+    this.player.setVelocity(0, 0);
+    this.setMessage(`Wild rustling... ${registry.creatures[wildEncounter.creatureId].name} appears!`);
+    this.cameras.main.fadeOut(160, 8, 19, 31);
+    this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
+      this.scene.launch("BattleScene", {
+        playerCreatureId: "spriglet",
+        wildEncounter,
+      });
+      this.scene.pause();
+    });
+  }
+
   private handleInteraction(interactable: Interactable): void {
     this.interactionLockedUntil = this.time.now + 260;
 
@@ -460,20 +513,53 @@ export class OverworldScene extends Phaser.Scene {
     this.transitionLocked = false;
     this.cameras.main.fadeIn(220, 8, 19, 31);
 
-    if (result.outcome === "win") {
+    if (result.source === "trainer" && result.outcome === "win" && result.battleId) {
       worldState.defeatedBattles[result.battleId] = true;
       const reward = registry.trainerBattles[result.battleId]?.reward;
       if (reward) {
         this.setMessage(reward);
       }
+    } else if (result.source === "wild" && result.outcome === "win") {
+      const creatureName = result.encounteredCreatureId
+        ? registry.creatures[result.encounteredCreatureId]?.name
+        : "wild creature";
+      this.setMessage(`${creatureName} retreated. The tall grass settles down for a moment.`);
     } else if (result.outcome === "lose") {
       this.setMessage("Your team needs more training. Try another route or battle again.");
     } else {
       this.setMessage("You slipped out of the battle and returned to the field.");
     }
+    this.lastPlayerPosition.set(this.player.x, this.player.y);
+    this.encounterTravel = 0;
   }
 
   private setMessage(message: string): void {
     this.messageText.setText(message);
+  }
+
+  private rollEncounter(zone: EncounterZone) {
+    const table = registry.encounterTables[zone.tableId];
+    if (!table || table.slots.length === 0) {
+      return null;
+    }
+
+    const totalWeight = table.slots.reduce((sum, slot) => sum + slot.weight, 0);
+    let roll = Math.random() * totalWeight;
+    let chosen: EncounterSlot | undefined;
+
+    for (const slot of table.slots) {
+      roll -= slot.weight;
+      if (roll <= 0) {
+        chosen = slot;
+        break;
+      }
+    }
+
+    chosen ??= table.slots[table.slots.length - 1];
+    return {
+      creatureId: chosen.creatureId,
+      level: Phaser.Math.Between(chosen.minLevel, chosen.maxLevel),
+      zoneLabel: zone.label,
+    };
   }
 }

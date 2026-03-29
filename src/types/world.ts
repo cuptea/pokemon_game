@@ -28,6 +28,12 @@ export type TrainerPartyMember = {
   level: number;
 };
 
+export type WildEncounterDefinition = {
+  creatureId: string;
+  level: number;
+  zoneLabel: string;
+};
+
 export type TrainerBattleDefinition = {
   id: string;
   intro: string;
@@ -138,8 +144,10 @@ export type MapModule = {
 };
 
 export type BattleResult = {
-  battleId: string;
+  battleId?: string;
   outcome: "win" | "lose" | "escape";
+  source: "trainer" | "wild";
+  encounteredCreatureId?: string;
 };
 
 export type WorldState = {

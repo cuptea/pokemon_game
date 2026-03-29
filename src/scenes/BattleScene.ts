@@ -1,11 +1,16 @@
 import Phaser from "phaser";
 import { registry } from "../data/registry";
 import { GAME_FONT, THEME } from "../game/theme";
-import type { BattleResult, TrainerPartyMember } from "../types/world";
+import type {
+  BattleResult,
+  TrainerPartyMember,
+  WildEncounterDefinition,
+} from "../types/world";
 
 type BattleSceneData = {
-  battleId: string;
   playerCreatureId: string;
+  battleId?: string;
+  wildEncounter?: WildEncounterDefinition;
 };
 
 type RuntimeCreature = {
@@ -18,10 +23,11 @@ type RuntimeCreature = {
   moveName: string;
   movePower: number;
   color: number;
+  level: number;
 };
 
 export class BattleScene extends Phaser.Scene {
-  private battleId!: string;
+  private battleId?: string;
   private player!: RuntimeCreature;
   private enemyParty!: RuntimeCreature[];
   private enemyIndex = 0;
@@ -37,6 +43,10 @@ export class BattleScene extends Phaser.Scene {
   private enemySprite!: Phaser.GameObjects.Rectangle;
   private resolved = false;
   private actionLocked = true;
+  private battleSource: "trainer" | "wild" = "trainer";
+  private introText = "";
+  private rewardText = "";
+  private encounteredCreatureId?: string;
 
   constructor() {
     super("BattleScene");
@@ -44,13 +54,26 @@ export class BattleScene extends Phaser.Scene {
 
   init(data: BattleSceneData): void {
     this.battleId = data.battleId;
-
-    const battle = registry.trainerBattles[data.battleId];
     this.player = this.buildCreature(data.playerCreatureId);
-    this.enemyParty = battle.party.map((member) => this.buildPartyCreature(member));
     this.enemyIndex = 0;
     this.resolved = false;
     this.actionLocked = true;
+
+    if (data.wildEncounter) {
+      this.battleSource = "wild";
+      this.encounteredCreatureId = data.wildEncounter.creatureId;
+      this.introText = `A wild ${registry.creatures[data.wildEncounter.creatureId].name} appeared in ${data.wildEncounter.zoneLabel}.`;
+      this.rewardText = `The wild ${registry.creatures[data.wildEncounter.creatureId].name} was driven back into the area.`;
+      this.enemyParty = [this.buildWildCreature(data.wildEncounter)];
+      return;
+    }
+
+    this.battleSource = "trainer";
+    this.encounteredCreatureId = undefined;
+    const battle = registry.trainerBattles[data.battleId!];
+    this.introText = battle.intro;
+    this.rewardText = battle.reward;
+    this.enemyParty = battle.party.map((member) => this.buildPartyCreature(member));
   }
 
   create(): void {
@@ -60,7 +83,7 @@ export class BattleScene extends Phaser.Scene {
       .rectangle(480, 320, 960, 640, THEME.battleFill, 0.96)
       .setStrokeStyle(4, THEME.panelStroke);
 
-    this.add.text(34, 24, "Battle Test", {
+    this.add.text(34, 24, this.battleSource === "wild" ? "Wild Encounter" : "Battle Test", {
       fontFamily: GAME_FONT,
       fontSize: "34px",
       color: THEME.text,
@@ -134,8 +157,12 @@ export class BattleScene extends Phaser.Scene {
     this.refreshEnemySprite();
     this.refreshHud();
     this.setActionButtonsEnabled(false);
-    this.setBanner(registry.trainerBattles[this.battleId].intro, THEME.accent);
-    this.infoText.setText(`Trainer sends out ${this.currentEnemy.name}. Choose your moment.`);
+    this.setBanner(this.introText, THEME.accent);
+    this.infoText.setText(
+      this.battleSource === "wild"
+        ? `${this.currentEnemy.name} blocks the path. Choose your moment.`
+        : `Trainer sends out ${this.currentEnemy.name}. Choose your moment.`,
+    );
 
     this.time.delayedCall(850, () => {
       this.setActionButtonsEnabled(true);
@@ -235,11 +262,24 @@ export class BattleScene extends Phaser.Scene {
         this.enemyIndex += 1;
         this.refreshEnemySprite();
         this.refreshHud();
-        this.setBanner(`Trainer sends out ${this.currentEnemy.name}`, THEME.accent);
-        this.infoText.setText(`${faintedName} fainted. ${this.currentEnemy.name} steps into battle.`);
+        this.setBanner(
+          this.battleSource === "wild"
+            ? `${this.currentEnemy.name} rushes in`
+            : `Trainer sends out ${this.currentEnemy.name}`,
+          THEME.accent,
+        );
+        this.infoText.setText(
+          this.battleSource === "wild"
+            ? `${faintedName} fainted. Another wild creature lunges forward.`
+            : `${faintedName} fainted. ${this.currentEnemy.name} steps into battle.`,
+        );
         this.time.delayedCall(700, () => this.setActionButtonsEnabled(true));
       } else {
-        this.infoText.setText(`${faintedName} fainted. The trainer's party is out of creatures.`);
+        this.infoText.setText(
+          this.battleSource === "wild"
+            ? `${faintedName} fainted. The grass settles down.`
+            : `${faintedName} fainted. The trainer's party is out of creatures.`,
+        );
         this.time.delayedCall(700, () => this.finishBattle("win"));
       }
     });
@@ -320,10 +360,10 @@ export class BattleScene extends Phaser.Scene {
 
   private refreshHud(): void {
     this.enemyHpText.setText(
-      `${this.currentEnemy.name}\nHP ${this.currentEnemy.hp}/${this.currentEnemy.maxHp}\nParty ${this.enemyIndex + 1}/${this.enemyParty.length}`,
+      `${this.currentEnemy.name} Lv ${this.currentEnemy.level}\nHP ${this.currentEnemy.hp}/${this.currentEnemy.maxHp}\nParty ${this.enemyIndex + 1}/${this.enemyParty.length}`,
     );
     this.playerHpText.setText(
-      `${this.player.name}\nHP ${this.player.hp}/${this.player.maxHp}`,
+      `${this.player.name} Lv ${this.player.level}\nHP ${this.player.hp}/${this.player.maxHp}`,
     );
   }
 
@@ -341,7 +381,7 @@ export class BattleScene extends Phaser.Scene {
 
     if (outcome === "win") {
       this.setBanner("Victory", THEME.success);
-      this.infoText.setText("The battle is won. The route ahead feels earned.");
+      this.infoText.setText(this.rewardText || "The battle is won. The route ahead feels earned.");
     } else if (outcome === "lose") {
       this.setBanner("Defeat", THEME.danger);
       this.infoText.setText("Your team needs more training before the next challenge.");
@@ -356,6 +396,8 @@ export class BattleScene extends Phaser.Scene {
         this.game.events.emit("battle-complete", {
           battleId: this.battleId,
           outcome,
+          source: this.battleSource,
+          encounteredCreatureId: this.encounteredCreatureId,
         } satisfies BattleResult);
         this.scene.resume("OverworldScene");
         this.scene.stop();
@@ -377,11 +419,22 @@ export class BattleScene extends Phaser.Scene {
       moveName: move.name,
       movePower: move.power,
       color: creature.color,
+      level: 5,
     };
   }
 
   private buildPartyCreature(member: TrainerPartyMember): RuntimeCreature {
-    return this.buildCreature(member.creatureId);
+    return {
+      ...this.buildCreature(member.creatureId),
+      level: member.level,
+    };
+  }
+
+  private buildWildCreature(member: WildEncounterDefinition): RuntimeCreature {
+    return {
+      ...this.buildCreature(member.creatureId),
+      level: member.level,
+    };
   }
 
   private get currentEnemy(): RuntimeCreature {
