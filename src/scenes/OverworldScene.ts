@@ -507,13 +507,7 @@ export class OverworldScene extends Phaser.Scene {
     }
 
     for (const wall of this.map.walls) {
-      const block = this.add.rectangle(
-        wall.x + wall.width / 2,
-        wall.y + wall.height / 2,
-        wall.width,
-        wall.height,
-        0x24533b,
-      );
+      const block = this.drawWallBoundary(wall);
       this.physics.add.existing(block, true);
     }
 
@@ -620,6 +614,89 @@ export class OverworldScene extends Phaser.Scene {
     }
 
     this.addPatchAccent(patch);
+  }
+
+  private drawWallBoundary(wall: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }): Phaser.GameObjects.Rectangle {
+    const centerX = wall.x + wall.width / 2;
+    const centerY = wall.y + wall.height / 2;
+    const isBorderWall =
+      wall.x <= 0 ||
+      wall.y <= 0 ||
+      wall.x + wall.width >= this.map.width ||
+      wall.y + wall.height >= this.map.height;
+    const isHorizontal = wall.width >= wall.height;
+    const fillColor = isBorderWall ? 0x18304b : 0x1e3b2f;
+    const strokeColor = isBorderWall ? this.visualTheme.accentSoft : 0xb08968;
+    const stripeColor = isBorderWall ? this.visualTheme.haze : 0xe9c46a;
+    const postColor = isBorderWall ? this.visualTheme.accent : 0x7f5539;
+    const alpha = isBorderWall ? 0.9 : 0.82;
+
+    const body = this.add
+      .rectangle(centerX, centerY, wall.width, wall.height, fillColor, alpha)
+      .setStrokeStyle(3, strokeColor, 0.98)
+      .setDepth(centerY - 6);
+
+    const inset = this.add
+      .rectangle(
+        centerX,
+        centerY,
+        Math.max(10, wall.width - 10),
+        Math.max(10, wall.height - 10),
+        isBorderWall ? this.visualTheme.horizon : 0x24533b,
+        isBorderWall ? 0.38 : 0.34,
+      )
+      .setStrokeStyle(1, stripeColor, 0.55)
+      .setDepth(centerY - 5);
+
+    const markerCount = Math.max(2, Math.floor((isHorizontal ? wall.width : wall.height) / 42));
+    for (let index = 0; index < markerCount; index += 1) {
+      const progress = markerCount === 1 ? 0.5 : index / (markerCount - 1);
+      const markerX = isHorizontal ? wall.x + progress * wall.width : centerX;
+      const markerY = isHorizontal ? centerY : wall.y + progress * wall.height;
+      const marker = this.add
+        .rectangle(
+          markerX,
+          markerY,
+          isHorizontal ? 10 : Math.max(14, wall.width - 12),
+          isHorizontal ? Math.max(14, wall.height - 12) : 10,
+          postColor,
+          isBorderWall ? 0.82 : 0.72,
+        )
+        .setDepth(centerY - 4);
+
+      if (isBorderWall) {
+        marker.setStrokeStyle(1, stripeColor, 0.5);
+      }
+    }
+
+    if (isBorderWall) {
+      const warningLine = this.add
+        .rectangle(
+          centerX,
+          centerY,
+          isHorizontal ? wall.width : Math.max(8, wall.width - 20),
+          isHorizontal ? Math.max(8, wall.height - 20) : wall.height,
+          stripeColor,
+          0.18,
+        )
+        .setDepth(centerY - 3);
+
+      this.tweens.add({
+        targets: [body, inset, warningLine],
+        alpha: { from: isHorizontal ? 0.78 : 0.74, to: 1 },
+        duration: 1100,
+        yoyo: true,
+        repeat: -1,
+        ease: "Sine.easeInOut",
+      });
+    }
+
+    return body;
   }
 
   private spawnPlayer(x: number, y: number): void {
