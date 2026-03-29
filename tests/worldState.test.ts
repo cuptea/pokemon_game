@@ -137,4 +137,19 @@ describe("worldState persistence", () => {
     expect(module.worldState.activeCreatureId).toBe("gullip");
     expect(module.worldState.introCompleted).toBe(true);
   });
+
+  it("falls back to defaults when stored save data is malformed JSON", async () => {
+    vi.stubGlobal(
+      "window",
+      makeWindow({
+        pokemon_game_world_state_v1: "{bad json",
+      }),
+    );
+
+    const module = await import("../src/game/worldState");
+
+    expect(module.worldState.currentMapId).toBe("mossgrove_town");
+    expect(module.worldState.selectedAvatar).toBe("blaze");
+    expect(module.worldState.selectedPartyCreatureIds).toEqual(["spriglet"]);
+  });
 });
