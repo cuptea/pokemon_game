@@ -1,0 +1,176 @@
+{
+  "compressionlevel": -1,
+  "height": 75,
+  "infinite": false,
+  "layers": [
+    {
+      "draworder": "topdown",
+      "id": 1,
+      "name": "terrain",
+      "objects": [
+        { "id": 1, "x": 0, "y": 0, "width": 1600, "height": 1200, "properties": [{ "name": "color", "type": "int", "value": 4169556 }] },
+        { "id": 2, "x": 120, "y": 180, "width": 360, "height": 150, "properties": [{ "name": "color", "type": "int", "value": 13152890 }, { "name": "strokeColor", "type": "int", "value": 15002002 }] },
+        { "id": 3, "x": 480, "y": 220, "width": 720, "height": 120, "properties": [{ "name": "color", "type": "int", "value": 13873533 }, { "name": "strokeColor", "type": "int", "value": 15002002 }] },
+        { "id": 4, "x": 1100, "y": 340, "width": 180, "height": 560, "properties": [{ "name": "color", "type": "int", "value": 13873533 }, { "name": "strokeColor", "type": "int", "value": 15002002 }] },
+        { "id": 5, "x": 920, "y": 760, "width": 360, "height": 190, "properties": [{ "name": "color", "type": "int", "value": 8314960 }, { "name": "strokeColor", "type": "int", "value": 9821294 }] },
+        { "id": 6, "x": 160, "y": 740, "width": 320, "height": 120, "properties": [{ "name": "color", "type": "int", "value": 8441241 }, { "name": "strokeColor", "type": "int", "value": 9892520 }] },
+        { "id": 7, "x": 1380, "y": 460, "width": 110, "height": 210, "properties": [{ "name": "color", "type": "int", "value": 9038556 }, { "name": "strokeColor", "type": "int", "value": 11724396 }] },
+        { "id": 8, "x": 270, "y": 280, "width": 220, "height": 170, "properties": [{ "name": "color", "type": "int", "value": 15524052 }, { "name": "strokeColor", "type": "int", "value": 11569512 }] },
+        { "id": 9, "x": 640, "y": 180, "width": 280, "height": 210, "properties": [{ "name": "color", "type": "int", "value": 15524052 }, { "name": "strokeColor", "type": "int", "value": 11569512 }] }
+      ],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 2,
+      "name": "collisions",
+      "objects": [
+        { "id": 10, "x": 0, "y": 0, "width": 1600, "height": 48 },
+        { "id": 11, "x": 0, "y": 1152, "width": 1600, "height": 48 },
+        { "id": 12, "x": 0, "y": 0, "width": 48, "height": 1200 },
+        { "id": 13, "x": 1552, "y": 0, "width": 48, "height": 1200 },
+        { "id": 14, "x": 250, "y": 280, "width": 250, "height": 180 },
+        { "id": 15, "x": 620, "y": 180, "width": 310, "height": 220 },
+        { "id": 16, "x": 1250, "y": 890, "width": 160, "height": 110 }
+      ],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 3,
+      "name": "decorations",
+      "objects": [
+        { "id": 17, "name": "house_player", "point": true, "x": 376, "y": 370, "properties": [{ "name": "textureKey", "type": "string", "value": "house" }, { "name": "scale", "type": "float", "value": 1.2 }] },
+        { "id": 18, "name": "house_lab", "point": true, "x": 774, "y": 290, "properties": [{ "name": "textureKey", "type": "string", "value": "house" }, { "name": "scale", "type": "float", "value": 1.25 }, { "name": "tint", "type": "int", "value": 15034523 }] },
+        { "id": 19, "name": "town_sign", "point": true, "x": 520, "y": 430, "properties": [{ "name": "textureKey", "type": "string", "value": "sign" }] },
+        { "id": 20, "name": "town_fence_a", "point": true, "x": 1110, "y": 720, "properties": [{ "name": "textureKey", "type": "string", "value": "fence" }] },
+        { "id": 21, "name": "town_fence_b", "point": true, "x": 1140, "y": 720, "properties": [{ "name": "textureKey", "type": "string", "value": "fence" }] },
+        { "id": 22, "name": "town_fence_c", "point": true, "x": 1170, "y": 720, "properties": [{ "name": "textureKey", "type": "string", "value": "fence" }] },
+        { "id": 23, "name": "town_tower", "point": true, "x": 1290, "y": 880, "properties": [{ "name": "textureKey", "type": "string", "value": "tower" }, { "name": "scale", "type": "float", "value": 1.2 }, { "name": "alpha", "type": "float", "value": 0.9 }] },
+        { "id": 24, "name": "dock_marker", "point": true, "x": 1435, "y": 570, "properties": [{ "name": "textureKey", "type": "string", "value": "dock" }] },
+        { "id": 25, "name": "town_fence_d", "point": true, "x": 1200, "y": 720, "properties": [{ "name": "textureKey", "type": "string", "value": "fence" }] },
+        { "id": 26, "name": "town_fence_e", "point": true, "x": 1230, "y": 720, "properties": [{ "name": "textureKey", "type": "string", "value": "fence" }] },
+        { "id": 27, "name": "tree_cluster_1", "point": true, "x": 980, "y": 950, "properties": [{ "name": "textureKey", "type": "string", "value": "tree" }, { "name": "scale", "type": "float", "value": 1.25 }] },
+        { "id": 28, "name": "tree_cluster_2", "point": true, "x": 1060, "y": 935, "properties": [{ "name": "textureKey", "type": "string", "value": "tree" }, { "name": "scale", "type": "float", "value": 1.1 }] },
+        { "id": 29, "name": "tree_cluster_3", "point": true, "x": 1160, "y": 930, "properties": [{ "name": "textureKey", "type": "string", "value": "tree" }, { "name": "scale", "type": "float", "value": 1.15 }] },
+        { "id": 30, "name": "tree_cluster_4", "point": true, "x": 1235, "y": 948, "properties": [{ "name": "textureKey", "type": "string", "value": "tree" }, { "name": "scale", "type": "float", "value": 1.1 }] }
+      ],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 4,
+      "name": "npcs",
+      "objects": [
+        { "id": 31, "name": "mentor-liora", "point": true, "x": 980, "y": 510 },
+        { "id": 32, "name": "town-healer", "point": true, "x": 220, "y": 520 },
+        { "id": 33, "name": "storyteller-elm", "point": true, "x": 1240, "y": 780 },
+        { "id": 34, "name": "dockhand-piers", "point": true, "x": 1380, "y": 700 },
+        { "id": 35, "name": "apprentice-fen", "point": true, "x": 640, "y": 470 }
+      ],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 5,
+      "name": "interactives",
+      "objects": [
+        { "id": 36, "name": "town_board", "point": true, "x": 520, "y": 430 },
+        { "id": 37, "name": "town_supply_crate", "point": true, "x": 700, "y": 420 },
+        { "id": 38, "name": "town_tower_plaque", "point": true, "x": 1290, "y": 980 }
+      ],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 6,
+      "name": "exits",
+      "objects": [
+        {
+          "id": 39,
+          "name": "town_to_route",
+          "x": 1470,
+          "y": 470,
+          "width": 90,
+          "height": 220,
+          "properties": [
+            { "name": "markerLabel", "type": "string", "value": "ROUTE" },
+            { "name": "prompt", "type": "string", "value": "Press E to head out to Route 01 Fields" },
+            { "name": "targetMapId", "type": "string", "value": "route_01_fields" },
+            { "name": "targetSpawnId", "type": "string", "value": "west_gate" }
+          ]
+        },
+        {
+          "id": 40,
+          "name": "town_to_house",
+          "x": 300,
+          "y": 470,
+          "width": 120,
+          "height": 60,
+          "properties": [
+            { "name": "markerLabel", "type": "string", "value": "HOME" },
+            { "name": "prompt", "type": "string", "value": "Press E to enter your house" },
+            { "name": "targetMapId", "type": "string", "value": "interior_player_house" },
+            { "name": "targetSpawnId", "type": "string", "value": "front_door" }
+          ]
+        }
+      ],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 7,
+      "name": "spawns",
+      "objects": [
+        { "id": 41, "name": "town_square", "point": true, "x": 860, "y": 760 },
+        { "id": 42, "name": "from_route", "point": true, "x": 1370, "y": 580 },
+        { "id": 43, "name": "from_house", "point": true, "x": 340, "y": 570 }
+      ],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    }
+  ],
+  "nextlayerid": 8,
+  "nextobjectid": 44,
+  "orientation": "orthogonal",
+  "properties": [
+    { "name": "id", "type": "string", "value": "mossgrove_town" },
+    { "name": "title", "type": "string", "value": "Mossgrove Town" },
+    { "name": "backgroundColor", "type": "string", "value": "#3f8f54" }
+  ],
+  "renderorder": "right-down",
+  "tiledversion": "1.11.2",
+  "tileheight": 16,
+  "tilesets": [],
+  "tilewidth": 16,
+  "type": "map",
+  "version": "1.11",
+  "width": 100
+}
