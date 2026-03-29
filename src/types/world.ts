@@ -1,4 +1,6 @@
 export type Facing = "up" | "down" | "left" | "right";
+export type PlayerAvatar = "blaze" | "mist" | "grove";
+export type GameDifficulty = "casual" | "adventure" | "heroic";
 
 export type Rect = {
   x: number;
@@ -155,4 +157,7 @@ export type WorldState = {
   currentSpawnId: string;
   defeatedBattles: Record<string, boolean>;
   collectedInteractives: Record<string, boolean>;
+  selectedAvatar: PlayerAvatar;
+  selectedDifficulty: GameDifficulty;
+  introCompleted: boolean;
 };

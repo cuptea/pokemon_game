@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { registry } from "../data/registry";
-import { GAME_FONT, THEME } from "../game/theme";
+import { DIFFICULTY_RULES, GAME_FONT, THEME } from "../game/theme";
+import { worldState } from "../game/worldState";
 import type {
   BattleResult,
   TrainerPartyMember,
@@ -355,7 +356,15 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private calculateDamage(attacker: RuntimeCreature, defender: RuntimeCreature): number {
-    return Math.max(2, attacker.attack + attacker.movePower - defender.defense);
+    const difficultyMultiplier =
+      attacker === this.player
+        ? 1
+        : DIFFICULTY_RULES[worldState.selectedDifficulty].enemyAttackMultiplier;
+
+    return Math.max(
+      2,
+      Math.round((attacker.attack + attacker.movePower - defender.defense) * difficultyMultiplier),
+    );
   }
 
   private refreshHud(): void {

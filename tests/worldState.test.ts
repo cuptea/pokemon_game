@@ -35,6 +35,9 @@ describe("worldState persistence", () => {
     expect(module.worldState.currentSpawnId).toBe("town_square");
     expect(module.worldState.defeatedBattles).toEqual({});
     expect(module.worldState.collectedInteractives).toEqual({});
+    expect(module.worldState.selectedAvatar).toBe("blaze");
+    expect(module.worldState.selectedDifficulty).toBe("adventure");
+    expect(module.worldState.introCompleted).toBe(false);
   });
 
   it("saves and resets persistent progress", async () => {
@@ -47,11 +50,16 @@ describe("worldState persistence", () => {
     module.worldState.currentSpawnId = "forest_return";
     module.worldState.defeatedBattles.scoutLinaBattle = true;
     module.worldState.collectedInteractives.route_bridge_cache = true;
+    module.worldState.selectedAvatar = "mist";
+    module.worldState.selectedDifficulty = "heroic";
+    module.worldState.introCompleted = true;
     module.saveWorldState();
 
     const savedRaw = fakeWindow.localStorage.getItem("pokemon_game_world_state_v1");
     expect(savedRaw).toContain("route_01_fields");
     expect(savedRaw).toContain("scoutLinaBattle");
+    expect(savedRaw).toContain("mist");
+    expect(savedRaw).toContain("heroic");
 
     module.resetWorldState();
 
@@ -59,5 +67,8 @@ describe("worldState persistence", () => {
     expect(module.worldState.currentSpawnId).toBe("town_square");
     expect(module.worldState.defeatedBattles).toEqual({});
     expect(module.worldState.collectedInteractives).toEqual({});
+    expect(module.worldState.selectedAvatar).toBe("blaze");
+    expect(module.worldState.selectedDifficulty).toBe("adventure");
+    expect(module.worldState.introCompleted).toBe(false);
   });
 });

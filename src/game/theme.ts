@@ -22,3 +22,30 @@ export const ASSET_STACK = {
   creatures: "OpenGameArt 50+ Monsters Pack 2D",
   items: "Kettoman RPG Essentials 16x16",
 };
+
+export const DIFFICULTY_RULES = {
+  casual: {
+    label: "CASUAL",
+    enemyAttackMultiplier: 0.85,
+    encounterRateMultiplier: 0.75,
+    bannerColor: 0x95d5b2,
+  },
+  adventure: {
+    label: "ADVENTURE",
+    enemyAttackMultiplier: 1,
+    encounterRateMultiplier: 1,
+    bannerColor: 0xf6bd60,
+  },
+  heroic: {
+    label: "HEROIC",
+    enemyAttackMultiplier: 1.2,
+    encounterRateMultiplier: 1.2,
+    bannerColor: 0xff6b6b,
+  },
+} as const;
+
+export const PLAYER_AVATARS = {
+  blaze: { label: "BLAZE", textureKey: "player_blaze", color: 0xff8f4a },
+  mist: { label: "MIST", textureKey: "player_mist", color: 0x58a6ff },
+  grove: { label: "GROVE", textureKey: "player_grove", color: 0x6bd66b },
+} as const;

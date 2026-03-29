@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import { registry } from "../data/registry";
 import { resetWorldState, saveWorldState, worldState } from "../game/worldState";
-import { GAME_FONT, THEME } from "../game/theme";
+import { DIFFICULTY_RULES, GAME_FONT, PLAYER_AVATARS, THEME } from "../game/theme";
 import type {
   BattleResult,
   EncounterSlot,
@@ -271,7 +271,11 @@ export class OverworldScene extends Phaser.Scene {
   }
 
   private spawnPlayer(x: number, y: number): void {
-    this.player = this.physics.add.sprite(x, y, "player");
+    this.player = this.physics.add.sprite(
+      x,
+      y,
+      PLAYER_AVATARS[worldState.selectedAvatar].textureKey,
+    );
     this.player.setCollideWorldBounds(true);
     this.player.setSize(24, 32);
     this.player.setOffset(3, 10);
@@ -405,11 +409,14 @@ export class OverworldScene extends Phaser.Scene {
     }
 
     if (this.encounterZone) {
+      const difficulty = DIFFICULTY_RULES[worldState.selectedDifficulty];
       this.hudText.setText(
-        `Exploring ${this.map.title}. ${this.encounterZone.label}. Safe paths stay readable near the road.`,
+        `Exploring ${this.map.title}. ${this.encounterZone.label}. ${difficulty.label} mode is active.`,
       );
     } else {
-      this.hudText.setText("Arrow keys or WASD to move. Press E to interact.");
+      this.hudText.setText(
+        `Arrow keys/WASD move. E interacts. ${DIFFICULTY_RULES[worldState.selectedDifficulty].label} mode.`,
+      );
     }
   }
 
@@ -438,7 +445,10 @@ export class OverworldScene extends Phaser.Scene {
     }
 
     this.encounterTravel = 0;
-    if (Math.random() > 0.2) {
+    if (
+      Math.random() >
+      0.2 * DIFFICULTY_RULES[worldState.selectedDifficulty].encounterRateMultiplier
+    ) {
       return;
     }
 
@@ -576,7 +586,7 @@ export class OverworldScene extends Phaser.Scene {
     const defeatedCount = Object.keys(worldState.defeatedBattles).length;
     const collectedCount = Object.keys(worldState.collectedInteractives).length;
     this.statusText.setText(
-      `Map: ${this.map.title}\nVictories: ${defeatedCount}\nDiscoveries: ${collectedCount}`,
+      `Hero: ${PLAYER_AVATARS[worldState.selectedAvatar].label}\nMode: ${DIFFICULTY_RULES[worldState.selectedDifficulty].label}\nVictories: ${defeatedCount}\nDiscoveries: ${collectedCount}`,
     );
   }
 
@@ -602,6 +612,9 @@ export class OverworldScene extends Phaser.Scene {
         "Interact: E",
         "Help: H",
         "Reset progress: R",
+        "",
+        `Hero: ${PLAYER_AVATARS[worldState.selectedAvatar].label}`,
+        `Difficulty: ${DIFFICULTY_RULES[worldState.selectedDifficulty].label}`,
         "",
         "Goal: clear trainer battles, find route clues, and explore the hidden grove, lake edge, town house, and forest path.",
         "",
@@ -630,7 +643,13 @@ export class OverworldScene extends Phaser.Scene {
   }
 
   private resetProgress(): void {
+    const avatar = worldState.selectedAvatar;
+    const difficulty = worldState.selectedDifficulty;
     resetWorldState();
+    worldState.selectedAvatar = avatar;
+    worldState.selectedDifficulty = difficulty;
+    worldState.introCompleted = true;
+    saveWorldState();
     this.helpVisible = false;
     if (this.helpPanel) {
       this.helpPanel.setVisible(false);

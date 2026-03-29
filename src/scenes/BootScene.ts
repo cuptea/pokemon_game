@@ -6,7 +6,9 @@ export class BootScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.makeCharacterTexture("player", 0xff8f4a);
+    this.makeCharacterTexture("player_blaze", 0xff8f4a);
+    this.makeCharacterTexture("player_mist", 0x58a6ff);
+    this.makeCharacterTexture("player_grove", 0x6bd66b);
     this.makeCharacterTexture("npc", 0xffd166);
     this.makeCharacterTexture("trainer", 0xa0c4ff);
     this.makeSignTexture("sign");
@@ -18,7 +20,7 @@ export class BootScene extends Phaser.Scene {
     this.makeHouseTexture("house");
     this.makeDockTexture("dock");
 
-    this.scene.start("OverworldScene");
+    this.scene.start("StartScene");
   }
 
   private makeCharacterTexture(key: string, fillColor: number): void {

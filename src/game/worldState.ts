@@ -1,4 +1,4 @@
-import type { WorldState } from "../types/world";
+import type { GameDifficulty, PlayerAvatar, WorldState } from "../types/world";
 
 const STORAGE_KEY = "pokemon_game_world_state_v1";
 
@@ -7,6 +7,9 @@ const initialState = (): WorldState => ({
   currentSpawnId: "town_square",
   defeatedBattles: {},
   collectedInteractives: {},
+  selectedAvatar: "blaze",
+  selectedDifficulty: "adventure",
+  introCompleted: false,
 });
 
 export const worldState: WorldState = loadWorldState();
@@ -28,6 +31,10 @@ export function loadWorldState(): WorldState {
       currentSpawnId: parsed.currentSpawnId ?? "town_square",
       defeatedBattles: parsed.defeatedBattles ?? {},
       collectedInteractives: parsed.collectedInteractives ?? {},
+      selectedAvatar: (parsed.selectedAvatar as PlayerAvatar | undefined) ?? "blaze",
+      selectedDifficulty:
+        (parsed.selectedDifficulty as GameDifficulty | undefined) ?? "adventure",
+      introCompleted: parsed.introCompleted ?? false,
     };
   } catch {
     return initialState();
@@ -48,5 +55,8 @@ export function resetWorldState(): void {
   worldState.currentSpawnId = fresh.currentSpawnId;
   worldState.defeatedBattles = fresh.defeatedBattles;
   worldState.collectedInteractives = fresh.collectedInteractives;
+  worldState.selectedAvatar = fresh.selectedAvatar;
+  worldState.selectedDifficulty = fresh.selectedDifficulty;
+  worldState.introCompleted = fresh.introCompleted;
   saveWorldState();
 }
