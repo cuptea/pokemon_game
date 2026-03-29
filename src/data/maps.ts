@@ -1,4 +1,5 @@
 import type { MapModule } from "../types/world";
+import { applyHeroMapVariants } from "./mapVariants";
 import { storyMaps } from "./storyMaps";
 
 const borderWalls = (width: number, height: number) => [
@@ -1014,3 +1015,5 @@ export const maps: Record<string, MapModule> = {
   },
   ...storyMaps,
 };
+
+applyHeroMapVariants(maps);

@@ -124,6 +124,17 @@ export class OverworldScene extends Phaser.Scene {
     );
   }
 
+  private get activePatches() {
+    return [...this.map.patches, ...(this.map.heroPatches?.[worldState.selectedAvatar] ?? [])];
+  }
+
+  private get activeDecorations() {
+    return [
+      ...this.map.decorations,
+      ...(this.map.heroDecorations?.[worldState.selectedAvatar] ?? []),
+    ];
+  }
+
   private bindInput(): void {
     this.cursors = this.input.keyboard!.createCursorKeys();
     this.keys = this.input.keyboard!.addKeys({
@@ -393,7 +404,7 @@ export class OverworldScene extends Phaser.Scene {
     this.renderBackdrop();
     const graphics = this.add.graphics();
 
-    for (const patch of this.map.patches) {
+    for (const patch of this.activePatches) {
       graphics.fillStyle(patch.color, patch.alpha ?? 1);
       graphics.fillRect(patch.x, patch.y, patch.width, patch.height);
       if (patch.strokeColor !== undefined) {
@@ -414,7 +425,7 @@ export class OverworldScene extends Phaser.Scene {
       this.physics.add.existing(block, true);
     }
 
-    for (const decoration of this.map.decorations) {
+    for (const decoration of this.activeDecorations) {
       this.drawDecorationAura(decoration);
       this.add
         .image(decoration.x, decoration.y, decoration.textureKey)

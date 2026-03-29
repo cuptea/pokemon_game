@@ -138,8 +138,10 @@ export type MapModule = {
   height: number;
   backgroundColor: string;
   patches: WorldPatch[];
+  heroPatches?: Partial<Record<PlayerAvatar, WorldPatch[]>>;
   walls: Rect[];
   decorations: DecorationPlacement[];
+  heroDecorations?: Partial<Record<PlayerAvatar, DecorationPlacement[]>>;
   encounterZones: EncounterZone[];
   npcs: NpcPlacement[];
   trainers: TrainerPlacement[];
