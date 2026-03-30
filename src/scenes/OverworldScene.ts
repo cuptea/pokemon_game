@@ -9,6 +9,7 @@ import {
   getLocalizedStorySurface,
   t,
 } from "../game/i18n";
+import { playBattleLaunchShift, playBattleReturnShift } from "../game/battleShiftFx";
 import {
   createBattleLaunchState,
   resolveBattleResumeState,
@@ -1180,6 +1181,7 @@ export class OverworldScene extends Phaser.Scene {
         name: registry.creatures[wildEncounter.creatureId].name,
       }),
     );
+    playBattleLaunchShift(this, this.visualTheme);
     this.cameras.main.fadeOut(160, 8, 19, 31);
     this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
       this.scene.launch("BattleScene", {
@@ -1275,6 +1277,7 @@ export class OverworldScene extends Phaser.Scene {
     this.transitionLocked = battleLaunchState.transitionLocked;
     this.awaitingBattleResume = battleLaunchState.awaitingBattleResume;
     this.player.setVelocity(0, 0);
+    playBattleLaunchShift(this, this.visualTheme);
     this.cameras.main.fadeOut(160, 8, 19, 31);
     this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
       this.scene.launch("BattleScene", {
@@ -1300,6 +1303,7 @@ export class OverworldScene extends Phaser.Scene {
         name: registry.creatures[actor.data.creatureId].name,
       }),
     );
+    playBattleLaunchShift(this, this.visualTheme);
     this.cameras.main.fadeOut(160, 8, 19, 31);
     this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
       this.scene.launch("BattleScene", {
@@ -1392,6 +1396,7 @@ export class OverworldScene extends Phaser.Scene {
 
     if (resumeState.shouldFadeIn) {
       this.cameras.main.fadeIn(220, 8, 19, 31);
+      playBattleReturnShift(this, this.visualTheme);
     }
   }
 

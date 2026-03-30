@@ -15,6 +15,7 @@ import {
   getQuizTimeLimitMs,
   getQuizWarningTimeMs,
 } from "../game/quizBattle";
+import { playBattleArrivalShift } from "../game/battleShiftFx";
 import { getStoryVisualTheme, toHexColor, type StoryVisualTheme } from "../game/storyVisuals";
 import { finalizeBattleTransition } from "../game/battleTransition";
 import { createUiPanel } from "../game/uiSkin";
@@ -128,6 +129,7 @@ export class BattleScene extends Phaser.Scene {
   create(): void {
     this.visualTheme = getStoryVisualTheme(worldState.selectedAvatar, worldState.currentMapId);
     this.cameras.main.fadeIn(120, 7, 19, 31);
+    playBattleArrivalShift(this, this.visualTheme);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleShutdown, this);
     this.events.once(Phaser.Scenes.Events.DESTROY, this.handleShutdown, this);
 
