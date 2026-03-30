@@ -1,10 +1,8 @@
 import type { BattleResult } from "../types/world";
 
 type BattleTransitionHandlers = {
-  startGameOver: () => void;
-  resumeOverworld: () => void;
-  emitBattleComplete: (result: BattleResult) => void;
-  stopBattle: () => void;
+  startGameOver: (result: BattleResult) => void;
+  returnToOverworld: (result: BattleResult) => void;
 };
 
 export function finalizeBattleTransition(
@@ -12,11 +10,9 @@ export function finalizeBattleTransition(
   handlers: BattleTransitionHandlers,
 ): void {
   if (result.outcome === "lose") {
-    handlers.startGameOver();
+    handlers.startGameOver(result);
     return;
   }
 
-  handlers.resumeOverworld();
-  handlers.emitBattleComplete(result);
-  handlers.stopBattle();
+  handlers.returnToOverworld(result);
 }

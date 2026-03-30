@@ -1205,17 +1205,13 @@ export class BattleScene extends Phaser.Scene {
           } satisfies BattleResult,
           {
             startGameOver: () => {
+              this.scene.stop("OverworldScene");
               this.scene.start("GameOverScene", {
                 message: t("gameover.defeat_message"),
               });
             },
-            resumeOverworld: () => {
-              this.scene.resume("OverworldScene");
-            },
-            emitBattleComplete: (result) => {
-              this.game.events.emit("battle-complete", result);
-            },
-            stopBattle: () => {
+            returnToOverworld: (result) => {
+              this.scene.run("OverworldScene", result);
               this.scene.stop();
             },
           },

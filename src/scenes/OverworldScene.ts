@@ -120,11 +120,9 @@ export class OverworldScene extends Phaser.Scene {
     this.bindInput();
     this.loadCurrentMap(true);
 
-    this.game.events.on("battle-complete", this.handleBattleComplete, this);
     this.game.events.on("party-updated", this.handlePartyUpdated, this);
     this.events.on(Phaser.Scenes.Events.RESUME, this.handleSceneResume, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      this.game.events.off("battle-complete", this.handleBattleComplete, this);
       this.game.events.off("party-updated", this.handlePartyUpdated, this);
       this.events.off(Phaser.Scenes.Events.RESUME, this.handleSceneResume, this);
     });
@@ -1314,11 +1312,7 @@ export class OverworldScene extends Phaser.Scene {
     });
   }
 
-  private handleBattleComplete(result: BattleResult): void {
-    if (!this.scene.isPaused()) {
-      this.applyBattleResumeState();
-    }
-
+  private applyBattleResult(result: BattleResult): void {
     if (result.source === "wild") {
       this.resolvePendingWildRoamer(result.outcome);
     }
@@ -1361,8 +1355,12 @@ export class OverworldScene extends Phaser.Scene {
     }
   }
 
-  private handleSceneResume(): void {
+  private handleSceneResume(_systems: Phaser.Scenes.Systems, data?: BattleResult): void {
     this.applyBattleResumeState();
+
+    if (data) {
+      this.applyBattleResult(data);
+    }
   }
 
   private resolvePendingWildRoamer(outcome: BattleResult["outcome"]): void {

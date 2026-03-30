@@ -4,7 +4,7 @@ import { finalizeBattleTransition } from "../src/game/battleTransition";
 import type { BattleResult } from "../src/types/world";
 
 describe("battle transition handoff", () => {
-  it("resumes the overworld before emitting battle-complete on wins", () => {
+  it("routes wins through the overworld return handoff", () => {
     const calls: string[] = [];
     const result: BattleResult = {
       battleId: "mentorBattle",
@@ -14,15 +14,13 @@ describe("battle transition handoff", () => {
 
     finalizeBattleTransition(result, {
       startGameOver: vi.fn(() => calls.push("gameover")),
-      resumeOverworld: vi.fn(() => calls.push("resume")),
-      emitBattleComplete: vi.fn(() => calls.push("emit")),
-      stopBattle: vi.fn(() => calls.push("stop")),
+      returnToOverworld: vi.fn(() => calls.push("return")),
     });
 
-    expect(calls).toEqual(["resume", "emit", "stop"]);
+    expect(calls).toEqual(["return"]);
   });
 
-  it("uses the same return order for escapes", () => {
+  it("uses the same return handoff for escapes", () => {
     const calls: string[] = [];
     const result: BattleResult = {
       outcome: "escape",
@@ -32,15 +30,13 @@ describe("battle transition handoff", () => {
 
     finalizeBattleTransition(result, {
       startGameOver: vi.fn(() => calls.push("gameover")),
-      resumeOverworld: vi.fn(() => calls.push("resume")),
-      emitBattleComplete: vi.fn(() => calls.push("emit")),
-      stopBattle: vi.fn(() => calls.push("stop")),
+      returnToOverworld: vi.fn(() => calls.push("return")),
     });
 
-    expect(calls).toEqual(["resume", "emit", "stop"]);
+    expect(calls).toEqual(["return"]);
   });
 
-  it("routes defeats directly to game over without separately resuming or stopping the overworld handoff", () => {
+  it("routes defeats directly to game over", () => {
     const calls: string[] = [];
     const result: BattleResult = {
       battleId: "mentorBattle",
@@ -50,16 +46,14 @@ describe("battle transition handoff", () => {
 
     finalizeBattleTransition(result, {
       startGameOver: vi.fn(() => calls.push("gameover")),
-      resumeOverworld: vi.fn(() => calls.push("resume")),
-      emitBattleComplete: vi.fn(() => calls.push("emit")),
-      stopBattle: vi.fn(() => calls.push("stop")),
+      returnToOverworld: vi.fn(() => calls.push("return")),
     });
 
     expect(calls).toEqual(["gameover"]);
   });
 
-  it("never emits battle completion for defeats", () => {
-    const emitBattleComplete = vi.fn();
+  it("never routes defeats back through the overworld return handoff", () => {
+    const returnToOverworld = vi.fn();
 
     finalizeBattleTransition(
       {
@@ -69,12 +63,10 @@ describe("battle transition handoff", () => {
       },
       {
         startGameOver: vi.fn(),
-        resumeOverworld: vi.fn(),
-        emitBattleComplete,
-        stopBattle: vi.fn(),
+        returnToOverworld,
       },
     );
 
-    expect(emitBattleComplete).not.toHaveBeenCalled();
+    expect(returnToOverworld).not.toHaveBeenCalled();
   });
 });
