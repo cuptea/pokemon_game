@@ -127,25 +127,26 @@ export class BattleScene extends Phaser.Scene {
 
     this.drawBattleBackdrop();
     this.add
-      .rectangle(480, 320, 960, 640, THEME.battleFill, 0.96)
-      .setStrokeStyle(4, THEME.panelStroke);
+      .rectangle(480, 320, 960, 640, 0x060d15, 0.9)
+      .setStrokeStyle(2, this.visualTheme.haze, 0.18);
+    this.add.rectangle(480, 54, 900, 56, 0x08131f, 0.56).setStrokeStyle(1, this.visualTheme.haze, 0.12);
     this.add
-      .ellipse(728, 250, 250, 70, 0x091522, 0.7)
-      .setStrokeStyle(3, THEME.panelStroke, 0.35);
+      .ellipse(728, 250, 250, 70, 0x08131f, 0.54)
+      .setStrokeStyle(2, this.visualTheme.haze, 0.18);
     this.add
-      .ellipse(228, 436, 290, 86, 0x0c1b2b, 0.78)
-      .setStrokeStyle(3, THEME.panelStroke, 0.38);
+      .ellipse(228, 436, 290, 86, 0x08131f, 0.62)
+      .setStrokeStyle(2, this.visualTheme.haze, 0.2);
     this.add
-      .ellipse(728, 242, 164, 30, this.currentEnemy.color, 0.22)
-      .setStrokeStyle(2, 0xffffff, 0.14);
+      .ellipse(728, 242, 164, 30, this.visualTheme.accentSoft, 0.12)
+      .setStrokeStyle(1, this.visualTheme.haze, 0.16);
     this.add
-      .ellipse(228, 424, 188, 36, this.currentPlayer.color, 0.24)
-      .setStrokeStyle(2, 0xffffff, 0.16);
+      .ellipse(228, 424, 188, 36, this.visualTheme.accent, 0.1)
+      .setStrokeStyle(1, this.visualTheme.haze, 0.16);
     this.add
-      .rectangle(726, 232, 280, 2, 0xffffff, 0.08)
+      .rectangle(726, 232, 280, 2, this.visualTheme.haze, 0.06)
       .setAngle(-6);
     this.add
-      .rectangle(232, 414, 300, 2, 0xffffff, 0.1)
+      .rectangle(232, 414, 300, 2, this.visualTheme.haze, 0.08)
       .setAngle(4);
     if (this.battleSource === "trainer") {
       this.add.rectangle(480, 320, 760, 12, this.visualTheme.horizon, 0.16);
@@ -169,48 +170,44 @@ export class BattleScene extends Phaser.Scene {
     this.add
       .tileSprite(480, 56, 900, 24, this.visualTheme.overlayTexture)
       .setTint(this.visualTheme.accent)
-      .setAlpha(0.14);
-    this.add
-      .text(866, 26, this.battleSource === "wild" ? t("battle.field_threat") : t("battle.tactical_duel"), {
-        fontFamily: GAME_FONT,
-        fontSize: "14px",
-        color: toHexColor(this.visualTheme.skyTop),
-        backgroundColor: toHexColor(this.visualTheme.accentSoft),
-        padding: { x: 10, y: 5 },
-        fontStyle: "bold",
-      })
-      .setOrigin(1, 0);
+      .setAlpha(0.08);
+    this.createSectionTag(
+      862,
+      28,
+      this.battleSource === "wild" ? t("battle.field_threat") : t("battle.tactical_duel"),
+      "accent",
+    ).setOrigin(1, 0);
 
     createUiPanel({
       scene: this,
-      x: 554,
-      y: 108,
-      width: 272,
-      height: 112,
+      x: 542,
+      y: 76,
+      width: 286,
+      height: 126,
       variant: "cool",
     });
     createUiPanel({
       scene: this,
       x: 34,
-      y: 368,
-      width: 308,
-      height: 148,
+      y: 358,
+      width: 320,
+      height: 184,
       variant: "cool",
     });
     createUiPanel({
       scene: this,
       x: 518,
-      y: 228,
-      width: 300,
-      height: 166,
+      y: 222,
+      width: 310,
+      height: 194,
       variant: "cool",
     });
     createUiPanel({
       scene: this,
       x: 518,
-      y: 440,
-      width: 300,
-      height: 140,
+      y: 430,
+      width: 310,
+      height: 136,
       variant: "cool",
     });
 
@@ -227,16 +224,7 @@ export class BattleScene extends Phaser.Scene {
     this.applyCreatureVisual(this.enemySprite, this.currentEnemy, "enemy");
     this.applyCreatureVisual(this.playerSprite, this.currentPlayer, "player");
 
-    this.add
-      .text(720, 296, t("battle.foe"), {
-        fontFamily: GAME_FONT,
-        fontSize: "16px",
-        color: THEME.textDark,
-        backgroundColor: "#d9f0ff",
-        padding: { x: 10, y: 4 },
-        fontStyle: "bold",
-      })
-      .setOrigin(0.5);
+    this.createSectionTag(720, 296, t("battle.foe"), "cool").setOrigin(0.5);
     this.add
       .text(720, 318, this.battleSource === "wild" ? t("battle.roaming_creature") : t("battle.trainer_party"), {
         fontFamily: GAME_FONT,
@@ -245,16 +233,7 @@ export class BattleScene extends Phaser.Scene {
         fontStyle: "bold",
       })
       .setOrigin(0.5);
-    this.add
-      .text(220, 504, t("battle.ally"), {
-        fontFamily: GAME_FONT,
-        fontSize: "16px",
-        color: THEME.textDark,
-        backgroundColor: "#ffe066",
-        padding: { x: 10, y: 4 },
-        fontStyle: "bold",
-      })
-      .setOrigin(0.5);
+    this.createSectionTag(220, 504, t("battle.ally"), "accent").setOrigin(0.5);
     this.add
       .text(220, 526, t("battle.team_lead"), {
         fontFamily: GAME_FONT,
@@ -266,54 +245,52 @@ export class BattleScene extends Phaser.Scene {
 
     this.bannerText = this.add.text(34, 72, "", {
       fontFamily: GAME_FONT,
-      fontSize: "18px",
+      fontSize: "17px",
       color: THEME.textDark,
       backgroundColor: "#f6bd60",
       padding: { x: 12, y: 8 },
       fontStyle: "bold",
     });
 
-    this.enemyHpText = this.add.text(566, 86, "", {
+    this.enemyHpText = this.add.text(562, 96, "", {
       fontFamily: GAME_FONT,
-      fontSize: "21px",
+      fontSize: "20px",
       color: THEME.text,
       fontStyle: "bold",
     });
-    this.playerHpText = this.add.text(52, 470, "", {
+    this.playerHpText = this.add.text(52, 452, "", {
       fontFamily: GAME_FONT,
-      fontSize: "21px",
+      fontSize: "20px",
       color: THEME.text,
       fontStyle: "bold",
     });
 
-    this.add.rectangle(566, 150, 226, 18, 0x30475e).setOrigin(0, 0.5);
+    this.add.rectangle(562, 164, 236, 16, 0x102030, 0.96).setOrigin(0, 0.5);
     this.enemyBar = this.add
-      .rectangle(566, 150, 226, 18, THEME.success)
+      .rectangle(562, 164, 236, 16, THEME.success)
       .setOrigin(0, 0.5);
-    this.add.rectangle(52, 534, 236, 18, 0x30475e).setOrigin(0, 0.5);
+    this.add.rectangle(52, 522, 248, 16, 0x102030, 0.96).setOrigin(0, 0.5);
     this.playerBar = this.add
-      .rectangle(52, 534, 236, 18, THEME.accentAlt)
+      .rectangle(52, 522, 248, 16, THEME.accentAlt)
       .setOrigin(0, 0.5);
     this.add.text(528, 244, t("battle.question"), {
       fontFamily: GAME_FONT,
       fontSize: "14px",
-      color: THEME.textMuted,
+      color: toHexColor(this.visualTheme.accentSoft),
       fontStyle: "bold",
     });
     this.quizPromptFrame = this.add
       .rectangle(668, 318, 286, 132)
-      .setStrokeStyle(2, this.visualTheme.accentSoft, 0.72)
+      .setFillStyle(0x091521, 0.42)
+      .setStrokeStyle(2, this.visualTheme.accentSoft, 0.56)
       .setDepth(2);
-    this.add
-      .rectangle(668, 318, 286, 132, this.visualTheme.haze, 0.05)
-      .setDepth(1.5);
     this.quizHintText = this.add.text(
       528,
       268,
       t("battle.quiz_intro"),
       {
         fontFamily: GAME_FONT,
-        fontSize: "18px",
+        fontSize: "19px",
         color: THEME.text,
         fontStyle: "bold",
         wordWrap: { width: 272 },
@@ -328,16 +305,16 @@ export class BattleScene extends Phaser.Scene {
         : t("battle.quiz_support_trainer"),
       {
         fontFamily: GAME_FONT,
-        fontSize: "14px",
+        fontSize: "13px",
         color: THEME.textMuted,
         fontStyle: "bold",
         wordWrap: { width: 272 },
         lineSpacing: 4,
       },
     );
-    this.add.rectangle(528, 430, 250, 10, 0x30475e, 0.9).setOrigin(0, 0.5);
+    this.add.rectangle(528, 430, 250, 8, 0x102030, 0.96).setOrigin(0, 0.5);
     this.quizTimerFill = this.add
-      .rectangle(528, 430, 250, 10, THEME.accentAlt, 1)
+      .rectangle(528, 430, 250, 8, THEME.accentAlt, 1)
       .setOrigin(0, 0.5)
       .setVisible(false);
     this.add
@@ -366,19 +343,19 @@ export class BattleScene extends Phaser.Scene {
     this.add.text(40, 538, t("battle.battle_log"), {
       fontFamily: GAME_FONT,
       fontSize: "14px",
-      color: THEME.textMuted,
+      color: toHexColor(this.visualTheme.accentSoft),
       fontStyle: "bold",
     });
     this.infoText = this.add.text(40, 546, "", {
       fontFamily: GAME_FONT,
       fontSize: "19px",
-      color: THEME.textMuted,
+      color: THEME.text,
       wordWrap: { width: 880 },
     });
     this.add.text(528, 444, t("battle.command"), {
       fontFamily: GAME_FONT,
       fontSize: "14px",
-      color: THEME.textMuted,
+      color: toHexColor(this.visualTheme.accentSoft),
       fontStyle: "bold",
     });
 
@@ -388,8 +365,16 @@ export class BattleScene extends Phaser.Scene {
       t("battle.start_quiz_attack"),
       () => this.beginQuizTurn(),
       "accent",
+      214,
     );
-    this.runButton = this.createActionButton(570, 520, t("battle.run"), () => this.finishBattle("escape"), "cool");
+    this.runButton = this.createActionButton(
+      570,
+      520,
+      t("battle.run"),
+      () => this.finishBattle("escape"),
+      "cool",
+      214,
+    );
     this.quizButtons = [
       this.createActionButton(528, 448, "", () => this.answerQuiz(0), "cool", 250),
       this.createActionButton(528, 496, "", () => this.answerQuiz(1), "cool", 250),
@@ -444,10 +429,10 @@ export class BattleScene extends Phaser.Scene {
     const button = this.add
       .text(x, y, label, {
         fontFamily: GAME_FONT,
-        fontSize: "22px",
+        fontSize: "20px",
         color: THEME.text,
         backgroundColor: toHexColor(palette.fill),
-        padding: { x: 16, y: 10 },
+        padding: { x: 16, y: 11 },
         fontStyle: "bold",
         align: "center",
         fixedWidth,
@@ -488,16 +473,16 @@ export class BattleScene extends Phaser.Scene {
       return {
         fill: this.visualTheme.accent,
         fillHover: this.visualTheme.accentSoft,
-        stroke: this.visualTheme.skyTop,
-        textHover: this.visualTheme.skyTop,
+        stroke: 0x142232,
+        textHover: 0x0b1622,
       };
     }
 
     return {
-      fill: this.visualTheme.skyBottom,
-      fillHover: this.visualTheme.haze,
-      stroke: this.visualTheme.skyTop,
-      textHover: this.visualTheme.skyTop,
+      fill: 0x183145,
+      fillHover: 0x234561,
+      stroke: this.visualTheme.haze,
+      textHover: 0xeaf7ff,
     };
   }
 
@@ -534,7 +519,7 @@ export class BattleScene extends Phaser.Scene {
       this.add.rectangle(480, 292, 960, 44, this.visualTheme.horizon, 0.24);
     }
 
-    const stageGlow = this.add.ellipse(480, 320, 820, 280, this.visualTheme.accentSoft, 0.08);
+    const stageGlow = this.add.ellipse(480, 320, 820, 280, this.visualTheme.accentSoft, 0.05);
     this.tweens.add({
       targets: stageGlow,
       alpha: { from: 0.04, to: 0.11 },
@@ -544,7 +529,7 @@ export class BattleScene extends Phaser.Scene {
       ease: "Sine.easeInOut",
     });
 
-    for (let index = 0; index < 14; index += 1) {
+    for (let index = 0; index < 9; index += 1) {
       const mote =
         this.visualTheme.atmosphere === "mist"
           ? this.add.ellipse(
@@ -553,7 +538,7 @@ export class BattleScene extends Phaser.Scene {
               Phaser.Math.Between(24, 48),
               Phaser.Math.Between(8, 18),
               this.visualTheme.haze,
-              0.08,
+              0.05,
             )
           : this.add.ellipse(
               Phaser.Math.Between(80, 880),
@@ -561,7 +546,7 @@ export class BattleScene extends Phaser.Scene {
               this.visualTheme.atmosphere === "embers" ? 4 : 6,
               this.visualTheme.atmosphere === "embers" ? 4 : 9,
               this.visualTheme.atmosphere === "embers" ? this.visualTheme.accent : this.visualTheme.accentSoft,
-              this.visualTheme.atmosphere === "embers" ? 0.46 : 0.14,
+              this.visualTheme.atmosphere === "embers" ? 0.36 : 0.1,
             );
       this.tweens.add({
         targets: mote,
@@ -611,6 +596,23 @@ export class BattleScene extends Phaser.Scene {
     button.setStyle({ color: THEME.text, backgroundColor: toHexColor(palette.fill) });
     button.setStroke(toHexColor(palette.stroke), 4);
     button.setScale(1);
+  }
+
+  private createSectionTag(
+    x: number,
+    y: number,
+    label: string,
+    tone: "accent" | "cool",
+  ): Phaser.GameObjects.Text {
+    const palette = this.getButtonPalette(tone);
+    return this.add.text(x, y, label, {
+      fontFamily: GAME_FONT,
+      fontSize: "14px",
+      color: tone === "accent" ? "#08131f" : "#f8f9fa",
+      backgroundColor: toHexColor(palette.fill),
+      padding: { x: 10, y: 5 },
+      fontStyle: "bold",
+    }).setStroke(toHexColor(palette.stroke), 2);
   }
 
   private revealQuizAnswer(selectedIndex: number | undefined, correctChoiceId: string | undefined): void {
