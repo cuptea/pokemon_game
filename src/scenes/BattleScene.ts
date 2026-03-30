@@ -45,6 +45,10 @@ export class BattleScene extends Phaser.Scene {
   private attackButton!: Phaser.GameObjects.Text;
   private runButton!: Phaser.GameObjects.Text;
   private quizButtons: Phaser.GameObjects.Text[] = [];
+  private quizModalBackdrop!: Phaser.GameObjects.Rectangle;
+  private quizModalFill!: Phaser.GameObjects.Rectangle;
+  private quizModalPanel!: Phaser.GameObjects.Container;
+  private quizModalTitle!: Phaser.GameObjects.Text;
   private quizHotkeys!: {
     quiz: Phaser.Input.Keyboard.Key;
     one: Phaser.Input.Keyboard.Key;
@@ -70,8 +74,10 @@ export class BattleScene extends Phaser.Scene {
   private encounteredCreatureId?: string;
   private currentQuiz: BattleQuizQuestion | null = null;
   private visualTheme!: StoryVisualTheme;
+  private quizTimerTrack!: Phaser.GameObjects.Rectangle;
   private quizTimerFill!: Phaser.GameObjects.Rectangle;
   private quizTimerText!: Phaser.GameObjects.Text;
+  private quizTimerLabel!: Phaser.GameObjects.Text;
   private quizTimerEvent?: Phaser.Time.TimerEvent;
   private quizTickerEvent?: Phaser.Time.TimerEvent;
   private askedQuizIds = new Set<string>();
@@ -273,64 +279,7 @@ export class BattleScene extends Phaser.Scene {
     this.playerBar = this.add
       .rectangle(52, 522, 248, 16, THEME.accentAlt)
       .setOrigin(0, 0.5);
-    this.add.text(528, 244, t("battle.question"), {
-      fontFamily: GAME_FONT,
-      fontSize: "14px",
-      color: toHexColor(this.visualTheme.accentSoft),
-      fontStyle: "bold",
-    });
-    this.quizPromptFrame = this.add
-      .rectangle(668, 318, 286, 132)
-      .setFillStyle(0x091521, 0.42)
-      .setStrokeStyle(2, this.visualTheme.accentSoft, 0.56)
-      .setDepth(2);
-    this.quizHintText = this.add.text(
-      528,
-      268,
-      t("battle.quiz_intro"),
-      {
-        fontFamily: GAME_FONT,
-        fontSize: "19px",
-        color: THEME.text,
-        fontStyle: "bold",
-        wordWrap: { width: 272 },
-        lineSpacing: 6,
-      },
-    );
-    this.promptSupportText = this.add.text(
-      528,
-      370,
-      this.battleSource === "wild"
-        ? t("battle.quiz_support_wild")
-        : t("battle.quiz_support_trainer"),
-      {
-        fontFamily: GAME_FONT,
-        fontSize: "13px",
-        color: THEME.textMuted,
-        fontStyle: "bold",
-        wordWrap: { width: 272 },
-        lineSpacing: 4,
-      },
-    );
-    this.add.rectangle(528, 430, 250, 8, 0x102030, 0.96).setOrigin(0, 0.5);
-    this.quizTimerFill = this.add
-      .rectangle(528, 430, 250, 8, THEME.accentAlt, 1)
-      .setOrigin(0, 0.5)
-      .setVisible(false);
-    this.add
-      .text(528, 410, t("battle.quiz_timer"), {
-        fontFamily: GAME_FONT,
-        fontSize: "14px",
-        color: THEME.textMuted,
-        fontStyle: "bold",
-      })
-      .setVisible(true);
-    this.quizTimerText = this.add.text(780, 408, "", {
-      fontFamily: GAME_FONT,
-      fontSize: "14px",
-      color: "#ffe8a3",
-      fontStyle: "bold",
-    });
+    this.createQuizModal();
 
     createUiPanel({
       scene: this,
@@ -376,9 +325,9 @@ export class BattleScene extends Phaser.Scene {
       214,
     );
     this.quizButtons = [
-      this.createActionButton(528, 448, "", () => this.answerQuiz(0), "cool", 250),
-      this.createActionButton(528, 496, "", () => this.answerQuiz(1), "cool", 250),
-      this.createActionButton(528, 544, "", () => this.answerQuiz(2), "cool", 250),
+      this.createActionButton(345, 350, "", () => this.answerQuiz(0), "cool", 270),
+      this.createActionButton(345, 404, "", () => this.answerQuiz(1), "cool", 270),
+      this.createActionButton(345, 458, "", () => this.answerQuiz(2), "cool", 270),
     ];
     this.setQuizButtonsVisible(false);
     this.quizHotkeys = this.input.keyboard!.addKeys({
@@ -415,6 +364,107 @@ export class BattleScene extends Phaser.Scene {
       this.setActionButtonsEnabled(true);
       this.actionLocked = false;
     });
+  }
+
+  private createQuizModal(): void {
+    this.quizModalBackdrop = this.add
+      .rectangle(480, 320, 960, 640, 0x04080d, 0.56)
+      .setDepth(18)
+      .setVisible(false);
+    this.quizModalPanel = createUiPanel({
+      scene: this,
+      x: 190,
+      y: 142,
+      width: 580,
+      height: 360,
+      variant: "warm",
+      alpha: 1,
+      depth: 19,
+    }).setVisible(false);
+    this.quizModalFill = this.add
+      .rectangle(480, 322, 534, 314, 0x08131f, 0.54)
+      .setDepth(19.2)
+      .setVisible(false);
+    this.quizModalTitle = this.add
+      .text(480, 172, t("battle.question"), {
+        fontFamily: GAME_FONT,
+        fontSize: "18px",
+        color: "#08131f",
+        backgroundColor: "#ffe066",
+        padding: { x: 12, y: 6 },
+        fontStyle: "bold",
+      })
+      .setOrigin(0.5, 0)
+      .setDepth(20)
+      .setVisible(false);
+    this.quizPromptFrame = this.add
+      .rectangle(480, 252, 500, 104, 0x091521, 0.78)
+      .setStrokeStyle(2, this.visualTheme.accentSoft, 0.5)
+      .setDepth(20)
+      .setVisible(false);
+    this.quizHintText = this.add.text(
+      480,
+      218,
+      t("battle.quiz_intro"),
+      {
+        fontFamily: GAME_FONT,
+        fontSize: "24px",
+        color: THEME.text,
+        fontStyle: "bold",
+        align: "center",
+        wordWrap: { width: 452 },
+        lineSpacing: 8,
+      },
+    )
+      .setOrigin(0.5, 0)
+      .setDepth(21)
+      .setVisible(false);
+    this.promptSupportText = this.add.text(
+      480,
+      306,
+      this.battleSource === "wild"
+        ? t("battle.quiz_support_wild")
+        : t("battle.quiz_support_trainer"),
+      {
+        fontFamily: GAME_FONT,
+        fontSize: "15px",
+        color: THEME.textMuted,
+        fontStyle: "bold",
+        align: "center",
+        wordWrap: { width: 470 },
+        lineSpacing: 5,
+      },
+    )
+      .setOrigin(0.5, 0)
+      .setDepth(21)
+      .setVisible(false);
+    this.quizTimerLabel = this.add.text(344, 336, t("battle.quiz_timer"), {
+      fontFamily: GAME_FONT,
+      fontSize: "14px",
+      color: toHexColor(this.visualTheme.accentSoft),
+      fontStyle: "bold",
+    })
+      .setDepth(21)
+      .setVisible(false);
+    this.quizTimerTrack = this.add
+      .rectangle(345, 358, 270, 10, 0x102030, 0.96)
+      .setOrigin(0, 0.5)
+      .setDepth(21)
+      .setVisible(false);
+    this.quizTimerFill = this.add
+      .rectangle(345, 358, 270, 10, THEME.accentAlt, 1)
+      .setOrigin(0, 0.5)
+      .setDepth(22)
+      .setVisible(false);
+    this.quizTimerText = this.add.text(618, 336, "", {
+      fontFamily: GAME_FONT,
+      fontSize: "14px",
+      color: "#ffe8a3",
+      fontStyle: "bold",
+    })
+      .setOrigin(1, 0)
+      .setDepth(21)
+      .setVisible(false);
   }
 
   private createActionButton(
@@ -658,34 +708,41 @@ export class BattleScene extends Phaser.Scene {
     this.actionLocked = !enabled;
     this.attackButton.setAlpha(enabled ? 1 : 0.6);
     this.runButton.setAlpha(enabled ? 1 : 0.6);
-    this.quizHintText.setAlpha(enabled ? 0.95 : 0.45);
-    this.promptSupportText.setAlpha(enabled ? 0.92 : 0.5);
-    this.quizPromptFrame.setAlpha(enabled ? 0.82 : 0.48);
     if (enabled) {
       this.attackButton.setVisible(true);
       this.runButton.setVisible(true);
-      this.quizHintText.setVisible(true);
-      this.promptSupportText.setVisible(true);
     }
   }
 
   private setQuizButtonsVisible(visible: boolean): void {
+    this.quizModalBackdrop.setVisible(visible);
+    this.quizModalPanel.setVisible(visible);
+    this.quizModalTitle.setVisible(visible);
+    this.quizPromptFrame.setVisible(visible);
+    this.quizHintText.setVisible(visible);
+    this.promptSupportText.setVisible(visible);
+    this.quizTimerLabel.setVisible(visible);
     for (const button of this.quizButtons) {
       button.setVisible(visible);
       button.setAlpha(visible ? 1 : 0);
+      button.setDepth(22);
     }
     this.quizTimerFill.setVisible(visible);
     this.quizTimerText.setVisible(visible);
-    this.quizHintText.setVisible(true);
-    this.quizHintText.setAlpha(visible ? 1 : 0.92);
-    this.promptSupportText.setVisible(true);
-    this.promptSupportText.setAlpha(visible ? 0.98 : 0.84);
+    this.quizHintText.setAlpha(visible ? 1 : 0);
+    this.promptSupportText.setAlpha(visible ? 0.98 : 0);
+    this.quizModalTitle.setAlpha(visible ? 1 : 0);
+    this.quizTimerLabel.setAlpha(visible ? 1 : 0);
     this.quizPromptFrame.setStrokeStyle(
       2,
       visible ? this.visualTheme.accent : this.visualTheme.accentSoft,
       visible ? 0.96 : 0.62,
     );
+    this.quizModalFill.setVisible(visible);
+    this.quizTimerTrack.setVisible(visible);
     if (visible) {
+      this.quizModalBackdrop.setAlpha(0.56);
+      this.quizPromptFrame.setAlpha(1);
       this.tweens.add({
         targets: this.quizPromptFrame,
         alpha: { from: 0.6, to: 1 },
@@ -696,7 +753,7 @@ export class BattleScene extends Phaser.Scene {
       });
     } else {
       this.tweens.killTweensOf(this.quizPromptFrame);
-      this.quizPromptFrame.setAlpha(0.82);
+      this.quizPromptFrame.setAlpha(0);
     }
   }
 
@@ -708,7 +765,7 @@ export class BattleScene extends Phaser.Scene {
     this.quizTickerEvent = undefined;
     this.tweens.killTweensOf(this.quizTimerFill);
     this.setQuizButtonsVisible(false);
-    this.quizTimerFill.displayWidth = 250;
+    this.quizTimerFill.displayWidth = 270;
     this.quizTimerText.setText("");
     this.quizHintText.setText(
       this.battleSource === "wild"
