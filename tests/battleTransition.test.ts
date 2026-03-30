@@ -57,4 +57,24 @@ describe("battle transition handoff", () => {
 
     expect(calls).toEqual(["gameover"]);
   });
+
+  it("never emits battle completion for defeats", () => {
+    const emitBattleComplete = vi.fn();
+
+    finalizeBattleTransition(
+      {
+        battleId: "mentorBattle",
+        outcome: "lose",
+        source: "trainer",
+      },
+      {
+        startGameOver: vi.fn(),
+        resumeOverworld: vi.fn(),
+        emitBattleComplete,
+        stopBattle: vi.fn(),
+      },
+    );
+
+    expect(emitBattleComplete).not.toHaveBeenCalled();
+  });
 });

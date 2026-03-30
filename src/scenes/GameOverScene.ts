@@ -34,7 +34,10 @@ export class GameOverScene extends Phaser.Scene {
     const story = getLocalizedStorySurface(worldState.selectedAvatar);
     const avatarLabel = getAvatarLabel(worldState.selectedAvatar);
 
+    this.scene.stop("OverworldScene");
+    this.cameras.main.resetFX();
     this.cameras.main.setBackgroundColor("#0c0612");
+    this.cameras.main.fadeIn(220, 12, 8, 18);
 
     this.add.rectangle(480, 320, 960, 640, 0x120819, 1);
     this.add.rectangle(480, 150, 760, 180, 0x2a1122, 0.58).setAngle(-4);
@@ -149,7 +152,8 @@ export class GameOverScene extends Phaser.Scene {
         fontStyle: "bold",
       })
       .setOrigin(0.5)
-      .setDepth(3);
+      .setDepth(3)
+      .setInteractive({ useHandCursor: true });
 
     this.add
       .text(480, 590, t("gameover.space_hint"), {
@@ -167,6 +171,7 @@ export class GameOverScene extends Phaser.Scene {
       yoyo: true,
       repeat: -1,
     });
+    this.restartButton.on("pointerdown", () => this.restartAdventure());
 
     const enter = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
     const space = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
