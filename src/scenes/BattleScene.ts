@@ -128,6 +128,8 @@ export class BattleScene extends Phaser.Scene {
 
   create(): void {
     this.visualTheme = getStoryVisualTheme(worldState.selectedAvatar, worldState.currentMapId);
+    this.cameras.main.resetFX();
+    this.cameras.main.setZoom(1);
     this.cameras.main.fadeIn(120, 7, 19, 31);
     playBattleArrivalShift(this, this.visualTheme);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleShutdown, this);

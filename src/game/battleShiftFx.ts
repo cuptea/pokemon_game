@@ -37,7 +37,17 @@ function createTransitionLayer(scene: Phaser.Scene, theme: StoryVisualTheme) {
     .setScrollFactor(0)
     .setDepth(TRANSITION_DEPTH + 3);
 
+  let destroyed = false;
+
   const destroy = () => {
+    if (destroyed) {
+      return;
+    }
+
+    destroyed = true;
+    scene.tweens.killTweensOf(scene.cameras.main);
+    scene.tweens.killTweensOf([veil, core, upperBand, lowerBand, pulseLine]);
+    scene.cameras.main.setZoom(1);
     veil.destroy();
     core.destroy();
     upperBand.destroy();
@@ -45,6 +55,7 @@ function createTransitionLayer(scene: Phaser.Scene, theme: StoryVisualTheme) {
     pulseLine.destroy();
   };
 
+  scene.events.once(Phaser.Scenes.Events.PAUSE, destroy);
   scene.events.once(Phaser.Scenes.Events.SHUTDOWN, destroy);
   scene.events.once(Phaser.Scenes.Events.DESTROY, destroy);
 

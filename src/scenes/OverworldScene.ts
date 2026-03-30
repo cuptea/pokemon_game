@@ -117,6 +117,13 @@ export class OverworldScene extends Phaser.Scene {
   }
 
   create(): void {
+    this.transitionLocked = false;
+    this.awaitingBattleResume = false;
+    this.pendingWildBattleActorId = undefined;
+    this.interactionLockedUntil = 0;
+    this.helpVisible = false;
+    this.cameras.main.resetFX();
+    this.cameras.main.setZoom(1);
     this.bindInput();
     this.loadCurrentMap(true);
 
