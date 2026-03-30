@@ -11,7 +11,7 @@ import {
 } from "../game/i18n";
 import {
   createBattleLaunchState,
-  createBattleResumeState,
+  resolveBattleResumeState,
 } from "../game/overworldBattleState";
 import { applyWildVictoryCapture } from "../game/wildCapture";
 import { shouldRemoveWildRoamerAfterBattle } from "../game/wildRoamerState";
@@ -1311,6 +1311,10 @@ export class OverworldScene extends Phaser.Scene {
   }
 
   private handleBattleComplete(result: BattleResult): void {
+    if (!this.scene.isPaused()) {
+      this.applyBattleResumeState();
+    }
+
     if (result.source === "wild") {
       this.resolvePendingWildRoamer(result.outcome);
     }
@@ -1354,19 +1358,7 @@ export class OverworldScene extends Phaser.Scene {
   }
 
   private handleSceneResume(): void {
-    if (!this.awaitingBattleResume) {
-      return;
-    }
-
-    const resumeState = createBattleResumeState(this.time.now);
-    this.awaitingBattleResume = resumeState.awaitingBattleResume;
-    this.transitionLocked = resumeState.transitionLocked;
-    this.interactionLockedUntil = resumeState.interactionLockedUntil;
-    this.player.setVelocity(0, 0);
-
-    if (resumeState.shouldFadeIn) {
-      this.cameras.main.fadeIn(220, 8, 19, 31);
-    }
+    this.applyBattleResumeState();
   }
 
   private resolvePendingWildRoamer(outcome: BattleResult["outcome"]): void {
@@ -1385,6 +1377,22 @@ export class OverworldScene extends Phaser.Scene {
     actor?.moveTween?.stop();
     actor?.sprite.destroy();
     this.wildActors = this.wildActors.filter((wildActor) => wildActor.id !== pendingActorId);
+  }
+
+  private applyBattleResumeState(): void {
+    const resumeState = resolveBattleResumeState(this.awaitingBattleResume, this.time.now);
+    if (!resumeState) {
+      return;
+    }
+
+    this.awaitingBattleResume = resumeState.awaitingBattleResume;
+    this.transitionLocked = resumeState.transitionLocked;
+    this.interactionLockedUntil = resumeState.interactionLockedUntil;
+    this.player.setVelocity(0, 0);
+
+    if (resumeState.shouldFadeIn) {
+      this.cameras.main.fadeIn(220, 8, 19, 31);
+    }
   }
 
   private setMessage(message: string): void {

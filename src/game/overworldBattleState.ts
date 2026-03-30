@@ -27,3 +27,14 @@ export function createBattleResumeState(now: number): BattleResumeState {
     shouldFadeIn: true,
   };
 }
+
+export function resolveBattleResumeState(
+  awaitingBattleResume: boolean,
+  now: number,
+): BattleResumeState | null {
+  if (!awaitingBattleResume) {
+    return null;
+  }
+
+  return createBattleResumeState(now);
+}

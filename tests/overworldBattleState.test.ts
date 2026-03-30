@@ -4,6 +4,7 @@ import {
   createBattleLaunchState,
   BATTLE_RESUME_LOCK_MS,
   createBattleResumeState,
+  resolveBattleResumeState,
 } from "../src/game/overworldBattleState";
 
 describe("overworld battle resume state", () => {
@@ -21,5 +22,15 @@ describe("overworld battle resume state", () => {
       interactionLockedUntil: 1200 + BATTLE_RESUME_LOCK_MS,
       shouldFadeIn: true,
     });
+  });
+
+  it("only creates a resume state while a battle return is still pending", () => {
+    expect(resolveBattleResumeState(true, 1200)).toEqual({
+      awaitingBattleResume: false,
+      transitionLocked: false,
+      interactionLockedUntil: 1200 + BATTLE_RESUME_LOCK_MS,
+      shouldFadeIn: true,
+    });
+    expect(resolveBattleResumeState(false, 1200)).toBeNull();
   });
 });

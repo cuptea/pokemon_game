@@ -40,7 +40,7 @@ describe("battle transition handoff", () => {
     expect(calls).toEqual(["resume", "emit", "stop"]);
   });
 
-  it("routes defeats directly to game over without resuming the overworld", () => {
+  it("routes defeats directly to game over without separately resuming or stopping the overworld handoff", () => {
     const calls: string[] = [];
     const result: BattleResult = {
       battleId: "mentorBattle",
